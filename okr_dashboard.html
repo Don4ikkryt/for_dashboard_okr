@@ -320,6 +320,7 @@ const CFG = {
   CLIENT_ID:       '700355704374-f63gktu3jbt8defjr7hj7dufq9ag2bid.apps.googleusercontent.com',
   API_KEY:         'AIzaSyCtb5pzm2olyF9Eey4ZKA2dQZ0RKd7-lis',
   MAIN_SHEET:      '1vdlRdEdHCZSwqrUorDDEQJwTBIejc4a0KQ8dCsZjugg',
+  ACCESS_SHEET:    '1WYWiU8LiIJvDqdsnblPKB1Eb5H3Yj66Q4VnpJ0M83QE',
   SCOPE:           'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.email',
   SESSION_MS:      24 * 60 * 60 * 1000,
 };
@@ -368,10 +369,12 @@ function startSignIn() {
       if (res.error) { authErr('Помилка авторизації: ' + res.error); return; }
       S.token = res.access_token;
       S.expiry = Date.now() + CFG.SESSION_MS;
-      showLoad('Завантаження...');
+      showLoad('Перевірка доступу...');
       try {
         const ui = await apiFetch('https://www.googleapis.com/oauth2/v3/userinfo');
         S.email = ui.email;
+        const ok = await checkAllowlist(S.email);
+        if (!ok) { hideLoad(); authErr('Доступ заборонено. Зверніться до адміністратора.'); S.token = null; return; }
         localStorage.setItem('okr_sess', JSON.stringify({ token: S.token, expiry: S.expiry, email: S.email }));
         showApp();
         await loadData();
@@ -381,6 +384,17 @@ function startSignIn() {
   tc.requestAccessToken({ prompt: 'consent' });
 }
 
+
+async function checkAllowlist(email) {
+  try {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CFG.ACCESS_SHEET}/values/${encodeURIComponent('Sheet1')}?key=${CFG.API_KEY}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    const emails = (d.values || []).flat().map(e => (e||'').trim().toLowerCase());
+    return emails.includes(email.toLowerCase());
+  } catch(e) { return false; }
+}
 
 function signOut() {
   localStorage.removeItem('okr_sess');
