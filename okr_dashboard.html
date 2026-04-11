@@ -178,8 +178,8 @@ main { flex: 1; padding: 28px 32px; }
 }
 
 /* GAUGE */
-.gauge-wrap { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
-.gauge-wrap svg { display: block; overflow: visible; }
+.gauge-wrap { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; overflow: hidden; }
+.gauge-wrap svg { display: block; overflow: hidden; }
 
 /* KR CARDS */
 .kr-cards { display: flex; flex-direction: column; gap: 16px; }
@@ -517,29 +517,22 @@ function color(v) { return v <= 33 ? '#d93025' : v <= 66 ? '#e07b00' : '#1a7a3c'
 // ═══════════════════════════════════
 function gauge(value, size) {
   size = size || 80;
-  const r = size * 0.38, cx = size / 2, cy = size * 0.58, sw = size * 0.09;
+  const r = size * 0.36, cx = size / 2, cy = size / 2, sw = size * 0.09;
   const c = color(value);
-  const arc = Math.PI * r;
-  const filled = (value / 100) * arc;
-
-  function ptc(angleDeg) {
-    const rad = (angleDeg - 90) * Math.PI / 180;
-    return [cx + r*Math.cos(rad), cy + r*Math.sin(rad)];
-  }
-  function arcPath() {
-    const [sx, sy] = ptc(360), [ex, ey] = ptc(180);
-    return `M ${sx} ${sy} A ${r} ${r} 0 0 0 ${ex} ${ey}`;
-  }
-  const d = arcPath();
-  const fs = size * 0.16;
-  const h = size * 0.62;
+  const circ = 2 * Math.PI * r;
+  const filled = (value / 100) * circ;
+  const fs = size * 0.17;
+  const offset = circ * 0.25; // start from top
 
   return `<div class="gauge-wrap">
-    <svg width="${size}" height="${h}" viewBox="0 0 ${size} ${h}">
-      <path d="${d}" fill="none" stroke="#e8eef6" stroke-width="${sw}" stroke-linecap="round"/>
-      <path d="${d}" fill="none" stroke="${c}" stroke-width="${sw}" stroke-linecap="round"
-        stroke-dasharray="${filled} ${arc - filled + 1}" stroke-dashoffset="0"/>
-      <text x="${cx}" y="${cy*0.88}" text-anchor="middle" dominant-baseline="middle"
+    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#e8eef6" stroke-width="${sw}"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${c}" stroke-width="${sw}"
+        stroke-linecap="round"
+        stroke-dasharray="${filled} ${circ - filled}"
+        stroke-dashoffset="${offset}"
+        transform="rotate(-90 ${cx} ${cy})"/>
+      <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle"
         font-size="${fs}" font-weight="700" fill="${c}"
         font-family="-apple-system,BlinkMacSystemFont,'Inter',sans-serif">${fmt(value)}</text>
     </svg>
