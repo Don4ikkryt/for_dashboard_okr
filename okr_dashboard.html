@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OKR Моніторинг — МОН України</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --c-bg: #f4f6f9;
+  --c-surface: #ffffff;
+  --c-border: #dde1e7;
+  --c-text: #1a2332;
+  --c-text-muted: #6b7a8d;
+  --c-primary: #1a3f6f;
+  --c-primary-light: #2563a8;
+  --c-accent: #e8eef6;
+  --c-red: #d93025;
+  --c-yellow: #e07b00;
+  --c-green: #1a7a3c;
+  --c-red-bg: #fde8e7;
+  --c-yellow-bg: #fff3e0;
+  --c-green-bg: #e6f4ec;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.10);
+  --radius: 8px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Roboto', sans-serif;
+  background: var(--c-bg);
+  color: var(--c-text);
+  min-width: 1280px;
+  min-height: 100vh;
+}
+
+/* AUTH */
+#auth-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+.auth-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  padding: 48px 56px;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+  max-width: 420px;
+  width: 100%;
+}
+.auth-logo {
+  width: 64px; height: 64px;
+  background: var(--c-primary);
+  border-radius: 12px;
+  margin: 0 auto 20px;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 28px; font-weight: 700;
+}
+.auth-card h1 { font-size: 20px; font-weight: 700; color: var(--c-primary); margin-bottom: 6px; }
+.auth-card p { font-size: 14px; color: var(--c-text-muted); margin-bottom: 28px; line-height: 1.5; }
+#btn-signin {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: 6px; padding: 10px 20px;
+  font-size: 15px; font-weight: 500; color: var(--c-text);
+  cursor: pointer; transition: background .15s, box-shadow .15s;
+  box-shadow: var(--shadow-sm);
+}
+#btn-signin:hover { background: var(--c-accent); box-shadow: var(--shadow-md); }
+#btn-signin svg { width: 20px; height: 20px; }
+#auth-error {
+  margin-top: 16px; padding: 10px 16px;
+  background: var(--c-red-bg); border: 1px solid #f5c6c4;
+  border-radius: 6px; color: var(--c-red); font-size: 13px; display: none;
+}
+
+/* APP */
+#app { display: none; flex-direction: column; min-height: 100vh; }
+header {
+  background: var(--c-primary); color: white;
+  padding: 0 32px; height: 56px;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  position: sticky; top: 0; z-index: 100;
+}
+.header-logo { font-size: 15px; font-weight: 700; letter-spacing: .3px; }
+.header-subtitle { font-size: 12px; opacity: .7; }
+.header-right { display: flex; align-items: center; gap: 16px; }
+.user-info { font-size: 13px; opacity: .85; }
+#btn-signout {
+  background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
+  color: white; padding: 5px 14px; border-radius: 5px;
+  font-size: 13px; cursor: pointer; transition: background .15s;
+}
+#btn-signout:hover { background: rgba(255,255,255,.25); }
+
+/* NAV BAR */
+.nav-bar {
+  background: var(--c-surface); border-bottom: 1px solid var(--c-border);
+  padding: 10px 32px; display: flex; align-items: center; gap: 8px; min-height: 44px;
+}
+.breadcrumb-item {
+  font-size: 13px; color: var(--c-text-muted); cursor: pointer;
+  padding: 3px 6px; border-radius: 4px; transition: background .12s, color .12s;
+  white-space: nowrap; max-width: 240px; overflow: hidden; text-overflow: ellipsis;
+}
+.breadcrumb-item:hover { background: var(--c-accent); color: var(--c-primary); }
+.breadcrumb-item.active { color: var(--c-text); font-weight: 500; cursor: default; }
+.breadcrumb-item.active:hover { background: transparent; }
+.breadcrumb-sep { color: var(--c-border); font-size: 16px; user-select: none; }
+.btn-back {
+  display: flex; align-items: center; gap: 5px;
+  background: none; border: none; color: var(--c-primary-light);
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  padding: 3px 8px; border-radius: 4px; margin-right: 8px; transition: background .12s;
+}
+.btn-back:hover { background: var(--c-accent); }
+.btn-back svg { width: 14px; height: 14px; }
+
+/* MAIN */
+main { flex: 1; padding: 28px 32px; }
+
+.level-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;
+}
+.level-title { font-size: 18px; font-weight: 700; color: var(--c-primary); }
+.level-subtitle { font-size: 13px; color: var(--c-text-muted); margin-top: 2px; }
+
+.year-selector { display: flex; align-items: center; gap: 8px; }
+.year-selector label { font-size: 13px; color: var(--c-text-muted); }
+#year-select {
+  border: 1px solid var(--c-border); border-radius: 6px;
+  padding: 6px 12px; font-size: 14px; color: var(--c-text);
+  background: var(--c-surface); cursor: pointer; outline: none;
+}
+#year-select:focus { border-color: var(--c-primary-light); }
+
+/* CARDS */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 260px));
+  gap: 20px;
+}
+.team-card {
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: var(--radius); padding: 24px 20px 18px;
+  cursor: pointer; transition: transform .15s, box-shadow .15s, border-color .15s;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  box-shadow: var(--shadow-sm);
+}
+.team-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--c-primary-light); }
+.card-name { font-size: 14px; font-weight: 600; color: var(--c-primary); text-align: center; line-height: 1.4; }
+
+/* LIST */
+.list-items { display: flex; flex-direction: column; gap: 10px; }
+.list-item {
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: var(--radius); padding: 14px 18px;
+  cursor: pointer; transition: transform .12s, box-shadow .12s, border-color .12s;
+  display: flex; align-items: center; gap: 16px;
+  box-shadow: var(--shadow-sm);
+}
+.list-item:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); border-color: var(--c-primary-light); }
+.list-item-info { flex: 1; min-width: 0; }
+.list-item-name { font-size: 14px; font-weight: 600; color: var(--c-primary); line-height: 1.4; margin-bottom: 3px; }
+.list-item-meta { font-size: 12px; color: var(--c-text-muted); display: flex; gap: 8px; }
+.quarter-badge {
+  display: inline-flex; align-items: center;
+  background: var(--c-accent); color: var(--c-primary);
+  border-radius: 4px; padding: 2px 8px;
+  font-size: 11px; font-weight: 700;
+  border: 1px solid var(--c-border); letter-spacing: .3px;
+}
+
+/* GAUGE */
+.gauge-wrap { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+.gauge-wrap svg { display: block; overflow: visible; }
+
+/* KR CARDS */
+.kr-cards { display: flex; flex-direction: column; gap: 16px; }
+.kr-card {
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: var(--radius); padding: 18px 22px;
+  box-shadow: var(--shadow-sm);
+}
+.kr-card-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 14px; }
+.kr-card-title { flex: 1; font-size: 14px; font-weight: 600; color: var(--c-primary); line-height: 1.5; }
+.kr-card-body {
+  display: grid;
+  grid-template-columns: 180px 120px 120px 200px 220px;
+  gap: 10px 16px;
+  align-items: end;
+}
+.kr-field { display: flex; flex-direction: column; gap: 4px; }
+.kr-field label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--c-text-muted); }
+.kr-field-value { font-size: 13px; color: var(--c-text); font-weight: 500; padding: 7px 0; }
+.kr-input {
+  border: 1px solid var(--c-border); border-radius: 5px;
+  padding: 7px 10px; font-size: 13px; color: var(--c-text);
+  width: 100%; outline: none; transition: border-color .15s;
+}
+.kr-input:focus { border-color: var(--c-primary-light); }
+.kr-input.error { border-color: var(--c-red); background: var(--c-red-bg); }
+.kr-select {
+  border: 1px solid var(--c-border); border-radius: 5px;
+  padding: 7px 10px; font-size: 13px; color: var(--c-text);
+  width: 100%; outline: none; background: var(--c-surface); cursor: pointer;
+}
+.kr-select:focus { border-color: var(--c-primary-light); }
+.binary-toggle { display: flex; border: 1px solid var(--c-border); border-radius: 5px; overflow: hidden; }
+.binary-toggle button {
+  flex: 1; padding: 7px 8px; border: none; background: var(--c-surface);
+  font-size: 12px; font-weight: 500; cursor: pointer; color: var(--c-text-muted);
+  transition: background .15s, color .15s;
+}
+.binary-toggle button:first-child { border-right: 1px solid var(--c-border); }
+.binary-toggle button.active-no { background: var(--c-red-bg); color: var(--c-red); }
+.binary-toggle button.active-yes { background: var(--c-green-bg); color: var(--c-green); }
+.kr-card-footer {
+  display: flex; align-items: center; justify-content: flex-end;
+  margin-top: 14px; gap: 12px;
+  border-top: 1px solid var(--c-border); padding-top: 12px;
+}
+.btn-save {
+  background: var(--c-primary); color: white; border: none;
+  border-radius: 6px; padding: 8px 22px; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: background .15s;
+}
+.btn-save:hover { background: var(--c-primary-light); }
+.btn-save:disabled { opacity: .5; cursor: not-allowed; }
+.save-status { font-size: 13px; font-weight: 500; display: none; }
+.save-status.ok { color: var(--c-green); display: inline; }
+.save-status.err { color: var(--c-red); display: inline; }
+
+/* LOADING */
+.loading-overlay {
+  position: fixed; inset: 0; background: rgba(244,246,249,.85);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; z-index: 200;
+}
+.spinner {
+  width: 36px; height: 36px;
+  border: 3px solid var(--c-border); border-top-color: var(--c-primary);
+  border-radius: 50%; animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 14px; color: var(--c-text-muted); }
+
+/* ERROR */
+.error-banner {
+  display: none; background: var(--c-red-bg); border: 1px solid #f5c6c4;
+  border-radius: 6px; padding: 12px 16px; color: var(--c-red);
+  font-size: 14px; margin-bottom: 20px;
+}
+.error-banner.visible { display: block; }
+
+/* TRANSITIONS */
+.anim-forward { animation: slideIn .18s ease; }
+.anim-back    { animation: slideBack .18s ease; }
+@keyframes slideIn   { from { opacity:0; transform: translateX(16px); } to { opacity:1; transform: none; } }
+@keyframes slideBack { from { opacity:0; transform: translateX(-16px); } to { opacity:1; transform: none; } }
+
+.empty-state { text-align: center; padding: 60px 20px; color: var(--c-text-muted); font-size: 15px; }
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">М</div>
+    <h1>OKR Моніторинг</h1>
+    <p>Платформа для відстеження OKR<br>Міністерства освіти та науки України</p>
+    <button id="btn-signin" onclick="startSignIn()">
+      <svg viewBox="0 0 24 24">
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+      </svg>
+      Увійти через Google
+    </button>
+    <div id="auth-error"></div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loading" style="display:none">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loading-text">Завантаження...</div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div>
+      <div class="header-logo">OKR Моніторинг МОН</div>
+      <div class="header-subtitle">Міністерство освіти та науки України</div>
+    </div>
+    <div class="header-right">
+      <span class="user-info" id="user-email-display"></span>
+      <button id="btn-signout" onclick="signOut()">Вийти</button>
+    </div>
+  </header>
+  <div class="nav-bar" id="nav-bar"></div>
+  <main id="main-content"></main>
+</div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+// ═══════════════════════════════════
+//  CONFIG  — замінити на реальні значення
+// ═══════════════════════════════════
+const CFG = {
+  CLIENT_ID:       '700355704374-f63gktu3jbt8defjr7hj7dufq9ag2bid.apps.googleusercontent.com',
+  API_KEY:         'AIzaSyCtb5pzm2olyF9Eey4ZKA2dQZ0RKd7-lis',
+  MAIN_SHEET:      '1PbDE_BBT__wyHJgwts1kuAJEpj9ZdpRU',
+  ACCESS_SHEET:    '1WYWiU8LiIJvDqdsnblPKB1Eb5H3Yj66Q4VnpJ0M83QE',
+  SCOPE:           'https://www.googleapis.com/auth/spreadsheets',
+  SESSION_MS:      24 * 60 * 60 * 1000,
+};
+
+// ═══════════════════════════════════
+//  STATE
+// ═══════════════════════════════════
+let S = {
+  token: null, expiry: null, email: null,
+  rows: [],          // all raw rows from sheet
+  year: null,        // selected year (string)
+  level: 1,          // current level 1-5
+  navStack: [],      // [{name}] entries per drill-down
+  sel: { team: null, obj: null, kr: null, qobj: null },
+  l5rows: [],        // rows visible at level 5
+};
+
+// ═══════════════════════════════════
+//  INIT
+// ═══════════════════════════════════
+window.onload = () => {
+  const saved = localStorage.getItem('okr_sess');
+  if (saved) {
+    try {
+      const s = JSON.parse(saved);
+      if (Date.now() < s.expiry) {
+        Object.assign(S, { token: s.token, expiry: s.expiry, email: s.email });
+        showApp();
+        loadData();
+        return;
+      }
+    } catch(e) {}
+    localStorage.removeItem('okr_sess');
+  }
+};
+
+// ═══════════════════════════════════
+//  AUTH
+// ═══════════════════════════════════
+function startSignIn() {
+  if (!window.google) { authErr('Google Identity Services не завантажено.'); return; }
+  const tc = google.accounts.oauth2.initTokenClient({
+    client_id: CFG.CLIENT_ID,
+    scope: CFG.SCOPE,
+    callback: async (res) => {
+      if (res.error) { authErr('Помилка авторизації: ' + res.error); return; }
+      S.token = res.access_token;
+      S.expiry = Date.now() + CFG.SESSION_MS;
+      showLoad('Перевірка доступу...');
+      try {
+        const ui = await apiFetch('https://www.googleapis.com/oauth2/v3/userinfo');
+        S.email = ui.email;
+        const ok = await checkAllowlist(S.email);
+        if (!ok) { hideLoad(); authErr('Доступ заборонено. Зверніться до адміністратора.'); S.token = null; return; }
+        localStorage.setItem('okr_sess', JSON.stringify({ token: S.token, expiry: S.expiry, email: S.email }));
+        showApp();
+        await loadData();
+      } catch(e) { hideLoad(); authErr('Помилка перевірки. Спробуйте ще раз.'); console.error(e); }
+    },
+  });
+  tc.requestAccessToken({ prompt: 'consent' });
+}
+
+async function checkAllowlist(email) {
+  try {
+    const d = await sheetsGet(CFG.ACCESS_SHEET, 'Sheet1');
+    const emails = (d.values || []).flat().map(e => (e||'').trim().toLowerCase());
+    return emails.includes(email.toLowerCase());
+  } catch(e) { return false; }
+}
+
+function signOut() {
+  localStorage.removeItem('okr_sess');
+  S = { token:null, expiry:null, email:null, rows:[], year:null, level:1, navStack:[], sel:{team:null,obj:null,kr:null,qobj:null}, l5rows:[] };
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('auth-error').style.display = 'none';
+}
+
+function authErr(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+function showApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('user-email-display').textContent = S.email || '';
+}
+
+// ═══════════════════════════════════
+//  DATA
+// ═══════════════════════════════════
+async function loadData() {
+  guardSession();
+  showLoad('Завантаження даних...');
+  try {
+    const d = await sheetsGet(CFG.MAIN_SHEET, 'Sheet1');
+    const rows = d.values || [];
+    if (rows.length < 2) { S.rows = []; }
+    else {
+      const hdrs = rows[0].map(h => h.trim());
+      S.rows = rows.slice(1).map((r, i) => {
+        const o = {};
+        hdrs.forEach((h, j) => { o[h] = (r[j] || '').trim(); });
+        o._row = i + 2; // 1-based row number in sheet
+        return o;
+      });
+    }
+    hideLoad();
+    renderL1(true);
+  } catch(e) {
+    hideLoad();
+    mainErr('Не вдалося завантажити дані. Перевірте з\'єднання.');
+    console.error(e);
+  }
+}
+
+// ═══════════════════════════════════
+//  API HELPERS
+// ═══════════════════════════════════
+async function apiFetch(url, opts = {}) {
+  const res = await fetch(url, { ...opts, headers: { Authorization: 'Bearer ' + S.token, ...(opts.headers || {}) } });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+async function sheetsGet(sheetId, range) {
+  return apiFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(range)}?key=${CFG.API_KEY}`);
+}
+
+async function sheetsBatchUpdate(sheetId, data) {
+  return apiFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchUpdate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ valueInputOption: 'RAW', data }),
+  });
+}
+
+async function sheetsAppend(sheetId, range, values) {
+  return apiFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(range)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ values }),
+  });
+}
+
+function guardSession() {
+  if (S.expiry && Date.now() > S.expiry) { signOut(); authErr('Сесія завершена. Увійдіть знову.'); }
+}
+
+// ═══════════════════════════════════
+//  METRICS
+// ═══════════════════════════════════
+function calcKR(row, progressOverride) {
+  const prog = progressOverride !== undefined ? progressOverride : row['Прогрес'];
+  const type = row['Тип'] || '';
+  const b = row['Baseline'], t = row['Target'];
+
+  if (type === 'Бінарний показник') {
+    if (!prog) return 0;
+    const p = prog.trim().toLowerCase(), tv = t.trim().toLowerCase(), bv = b.trim().toLowerCase();
+    if (p === tv) return 100;
+    if (p === bv) return 0;
+    return ['так','yes','1','true'].includes(p) ? 100 : 0;
+  }
+  const bN = parseFloat(b), tN = parseFloat(t), pN = parseFloat(prog);
+  if (isNaN(bN) || isNaN(tN) || isNaN(pN) || tN === bN) return 0;
+  return Math.min(100, Math.max(0, (pN - bN) / (tN - bN) * 100));
+}
+
+function avg(arr) { return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0; }
+
+function teamMetric(rows) {
+  const objs = unique(rows, 'Назва річної цілі');
+  return avg(objs.map(o => objMetric(rows.filter(r => r['Назва річної цілі'] === o))));
+}
+function objMetric(rows) {
+  const krs = unique(rows, 'Назва річного KR');
+  return avg(krs.map(k => annualKRMetric(rows.filter(r => r['Назва річного KR'] === k))));
+}
+function annualKRMetric(rows) {
+  const qo = unique(rows, 'Квартальна ціль');
+  return avg(qo.map(q => qObjMetric(rows.filter(r => r['Квартальна ціль'] === q))));
+}
+function qObjMetric(rows) { return avg(rows.map(r => calcKR(r))); }
+
+function unique(rows, col) { return [...new Set(rows.map(r => r[col]).filter(Boolean))]; }
+function fmt(v) { return (Math.round(v*10)/10).toFixed(1) + '%'; }
+function color(v) { return v <= 33 ? '#d93025' : v <= 66 ? '#e07b00' : '#1a7a3c'; }
+
+// ═══════════════════════════════════
+//  GAUGE SVG
+// ═══════════════════════════════════
+function gauge(value, size) {
+  size = size || 80;
+  const r = size * 0.38, cx = size / 2, cy = size * 0.58, sw = size * 0.09;
+  const c = color(value);
+  const arc = Math.PI * r;
+  const filled = (value / 100) * arc;
+
+  function ptc(angleDeg) {
+    const rad = (angleDeg - 90) * Math.PI / 180;
+    return [cx + r*Math.cos(rad), cy + r*Math.sin(rad)];
+  }
+  function arcPath() {
+    const [sx, sy] = ptc(360), [ex, ey] = ptc(180);
+    return `M ${sx} ${sy} A ${r} ${r} 0 0 0 ${ex} ${ey}`;
+  }
+  const d = arcPath();
+  const fs = size * 0.16;
+  const h = size * 0.62;
+
+  return `<div class="gauge-wrap">
+    <svg width="${size}" height="${h}" viewBox="0 0 ${size} ${h}">
+      <path d="${d}" fill="none" stroke="#e8eef6" stroke-width="${sw}" stroke-linecap="round"/>
+      <path d="${d}" fill="none" stroke="${c}" stroke-width="${sw}" stroke-linecap="round"
+        stroke-dasharray="${filled} ${arc - filled + 1}" stroke-dashoffset="0"/>
+      <text x="${cx}" y="${cy*0.88}" text-anchor="middle" dominant-baseline="middle"
+        font-size="${fs}" font-weight="700" fill="${c}"
+        font-family="-apple-system,BlinkMacSystemFont,'Inter',sans-serif">${fmt(value)}</text>
+    </svg>
+  </div>`;
+}
+
+// ═══════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════
+function years() {
+  return [...new Set(S.rows.map(r=>r['Рік']).filter(Boolean))].sort((a,b)=>Number(b)-Number(a));
+}
+function filtered() { return S.rows.filter(r => String(r['Рік']) === String(S.year)); }
+
+function renderNav() {
+  const labels = ['Команди', ...S.navStack.map(s=>s.name)];
+  let h = '';
+  if (S.level > 1) {
+    h += `<button class="btn-back" onclick="goBack()">
+      <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Назад
+    </button>`;
+  }
+  labels.forEach((lbl, i) => {
+    if (i > 0) h += `<span class="breadcrumb-sep">/</span>`;
+    const active = i === labels.length - 1;
+    const lvl = i + 1;
+    h += `<span class="breadcrumb-item${active?' active':''}" title="${x(lbl)}"
+      ${active ? '' : `onclick="goLevel(${lvl})"`}>${trunc(lbl, 35)}</span>`;
+  });
+  document.getElementById('nav-bar').innerHTML = h;
+}
+
+function goBack() {
+  if (S.level <= 1) return;
+  S.navStack.pop(); S.level--;
+  render(false);
+}
+function goLevel(n) {
+  if (n >= S.level) return;
+  S.navStack = S.navStack.slice(0, n - 1); S.level = n;
+  render(false);
+}
+function render(fwd) {
+  switch(S.level) {
+    case 1: renderL1(fwd); break; case 2: renderL2(fwd); break;
+    case 3: renderL3(fwd); break; case 4: renderL4(fwd); break;
+    case 5: renderL5(fwd); break;
+  }
+}
+
+function setHTML(html, fwd) {
+  document.getElementById('main-content').innerHTML =
+    `<div class="${fwd ? 'anim-forward' : 'anim-back'}">${html}</div>`;
+}
+
+function trunc(s, n) { return s.length > n ? s.slice(0, n-1) + '…' : s; }
+function x(s) { // escape for html attributes and content
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+}
+
+// ═══════════════════════════════════
+//  LEVEL 1 — Teams
+// ═══════════════════════════════════
+function renderL1(fwd) {
+  S.level = 1; S.navStack = [];
+  const ys = years();
+  const curY = String(new Date().getFullYear());
+  if (!S.year) S.year = ys.includes(curY) ? curY : (ys[0] || curY);
+
+  const rows = filtered();
+  const teams = unique(rows, 'Команда').sort();
+
+  let h = `<div class="level-header">
+    <div><div class="level-title">Команди</div><div class="level-subtitle">Оберіть команду</div></div>
+    <div class="year-selector">
+      <label>Рік:</label>
+      <select id="year-select" onchange="changeYear(this.value)">
+        ${ys.map(y=>`<option value="${y}"${y===S.year?' selected':''}>${y}</option>`).join('')}
+      </select>
+    </div>
+  </div>
+  <div id="mainerr" class="error-banner"></div>`;
+
+  if (!teams.length) {
+    h += `<div class="empty-state">Даних за ${S.year} рік немає.</div>`;
+  } else {
+    h += `<div class="cards-grid">`;
+    teams.forEach(team => {
+      const tr = rows.filter(r => r['Команда'] === team);
+      const m = teamMetric(tr);
+      h += `<div class="team-card" onclick="drill1('${esc4js(team)}')">
+        ${gauge(m, 96)}
+        <div class="card-name">${x(team)}</div>
+      </div>`;
+    });
+    h += `</div>`;
+  }
+  setHTML(h, fwd);
+  renderNav();
+}
+
+function changeYear(y) { S.year = y; renderL1(true); }
+
+// ═══════════════════════════════════
+//  LEVEL 2 — Annual Objectives
+// ═══════════════════════════════════
+function drill1(team) {
+  S.sel.team = team; S.navStack = [{ name: team }]; S.level = 2; renderL2(true);
+}
+function renderL2(fwd) {
+  const rows = filtered().filter(r => r['Команда'] === S.sel.team);
+  const objs = unique(rows, 'Назва річної цілі');
+  let h = `<div class="level-header">
+    <div><div class="level-title">${x(S.sel.team)}</div><div class="level-subtitle">Річні цілі · ${S.year}</div></div>
+  </div><div class="list-items">`;
+  objs.forEach(obj => {
+    const m = objMetric(rows.filter(r => r['Назва річної цілі'] === obj));
+    h += `<div class="list-item" onclick="drill2('${esc4js(obj)}')">
+      <div class="list-item-info"><div class="list-item-name">${x(obj)}</div><div class="list-item-meta">${x(S.year)}</div></div>
+      ${gauge(m, 76)}
+    </div>`;
+  });
+  h += `</div>`;
+  setHTML(h, fwd); renderNav();
+}
+
+// ═══════════════════════════════════
+//  LEVEL 3 — Annual KRs
+// ═══════════════════════════════════
+function drill2(obj) {
+  S.sel.obj = obj; S.navStack = [{ name: S.sel.team }, { name: obj }]; S.level = 3; renderL3(true);
+}
+function renderL3(fwd) {
+  const rows = filtered().filter(r => r['Команда'] === S.sel.team && r['Назва річної цілі'] === S.sel.obj);
+  const krs = unique(rows, 'Назва річного KR');
+  let h = `<div class="level-header">
+    <div><div class="level-title">Річні KR</div><div class="level-subtitle">${x(S.sel.obj)}</div></div>
+  </div><div class="list-items">`;
+  krs.forEach(kr => {
+    const m = annualKRMetric(rows.filter(r => r['Назва річного KR'] === kr));
+    h += `<div class="list-item" onclick="drill3('${esc4js(kr)}')">
+      <div class="list-item-info"><div class="list-item-name">${x(kr)}</div></div>
+      ${gauge(m, 76)}
+    </div>`;
+  });
+  h += `</div>`;
+  setHTML(h, fwd); renderNav();
+}
+
+// ═══════════════════════════════════
+//  LEVEL 4 — Quarterly Objectives
+// ═══════════════════════════════════
+function drill3(kr) {
+  S.sel.kr = kr;
+  S.navStack = [{ name: S.sel.team }, { name: S.sel.obj }, { name: kr }];
+  S.level = 4; renderL4(true);
+}
+function renderL4(fwd) {
+  const rows = filtered().filter(r =>
+    r['Команда'] === S.sel.team && r['Назва річної цілі'] === S.sel.obj && r['Назва річного KR'] === S.sel.kr
+  );
+  // Group by quarterly obj, sort by quarter
+  const map = {};
+  rows.forEach(r => {
+    const k = r['Квартальна ціль']; if (!k) return;
+    if (!map[k]) map[k] = { rows: [], q: r['Квартал'] };
+    map[k].rows.push(r);
+  });
+  const sorted = Object.entries(map).sort((a,b) => Number(a[1].q) - Number(b[1].q));
+  let h = `<div class="level-header">
+    <div><div class="level-title">Квартальні цілі</div><div class="level-subtitle">${x(S.sel.kr)}</div></div>
+  </div><div class="list-items">`;
+  sorted.forEach(([qobj, info]) => {
+    const m = qObjMetric(info.rows);
+    h += `<div class="list-item" onclick="drill4('${esc4js(qobj)}')">
+      <div class="list-item-info">
+        <div class="list-item-name">${x(qobj)}</div>
+        <div class="list-item-meta"><span class="quarter-badge">Q${info.q}</span></div>
+      </div>
+      ${gauge(m, 76)}
+    </div>`;
+  });
+  h += `</div>`;
+  setHTML(h, fwd); renderNav();
+}
+
+// ═══════════════════════════════════
+//  LEVEL 5 — Quarterly KRs
+// ═══════════════════════════════════
+const STATUSES = ['Вчасно', '⚠️ Під загрозою', '🔴 Не виконується', '⏸️ Призупинено'];
+
+function drill4(qobj) {
+  S.sel.qobj = qobj;
+  S.navStack = [{ name: S.sel.team }, { name: S.sel.obj }, { name: S.sel.kr }, { name: qobj }];
+  S.level = 5; renderL5(true);
+}
+function renderL5(fwd) {
+  S.l5rows = filtered().filter(r =>
+    r['Команда'] === S.sel.team && r['Назва річної цілі'] === S.sel.obj &&
+    r['Назва річного KR'] === S.sel.kr && r['Квартальна ціль'] === S.sel.qobj
+  );
+  let h = `<div class="level-header">
+    <div><div class="level-title">Квартальні KR</div><div class="level-subtitle">${x(S.sel.qobj)}</div></div>
+  </div><div class="kr-cards">`;
+
+  S.l5rows.forEach((row, i) => {
+    const isBin = row['Тип'] === 'Бінарний показник';
+    const prog = row['Прогрес'] || row['Baseline'];
+    const stat = row['Статус'] || 'Вчасно';
+    const m = calcKR(row, prog);
+
+    let progInput;
+    if (isBin) {
+      const isYes = binIsYes(prog, row['Target']);
+      progInput = `
+        <div class="binary-toggle">
+          <button id="bno_${i}" class="${isYes?'':'active-no'}" onclick="setBin(${i},false)">${x(row['Baseline'])}</button>
+          <button id="byes_${i}" class="${isYes?'active-yes':''}" onclick="setBin(${i},true)">${x(row['Target'])}</button>
+        </div>
+        <input type="hidden" id="prog_${i}" value="${x(prog)}">`;
+    } else {
+      const bN = parseFloat(row['Baseline']), tN = parseFloat(row['Target']);
+      progInput = `<input type="number" class="kr-input" id="prog_${i}"
+        value="${x(prog)}"
+        ${isNaN(bN)?'':` min="${bN}"`}
+        ${isNaN(tN)?'':` max="${tN}"`}
+        step="any" oninput="onProg(${i})" placeholder="${x(row['Baseline'])}">`;
+    }
+
+    const statOpts = STATUSES.map(s => `<option value="${x(s)}"${s===stat?' selected':''}>${x(s)}</option>`).join('');
+
+    h += `<div class="kr-card" id="krc_${i}" data-row="${row._row}">
+      <div class="kr-card-header">
+        <div class="kr-card-title">${x(row['Назва квартального KR'])}</div>
+        <div id="gauge_${i}">${gauge(m, 88)}</div>
+      </div>
+      <div class="kr-card-body">
+        <div class="kr-field"><label>Тип</label><div class="kr-field-value">${x(row['Тип'])}</div></div>
+        <div class="kr-field"><label>Baseline</label><div class="kr-field-value">${x(row['Baseline'])}</div></div>
+        <div class="kr-field"><label>Target</label><div class="kr-field-value">${x(row['Target'])}</div></div>
+        <div class="kr-field"><label>Прогрес</label>${progInput}</div>
+        <div class="kr-field"><label>Статус</label><select class="kr-select" id="stat_${i}">${statOpts}</select></div>
+      </div>
+      <div class="kr-card-footer">
+        <span class="save-status" id="smsg_${i}"></span>
+        <button class="btn-save" id="sbtn_${i}" onclick="saveRow(${i})">Зберегти</button>
+      </div>
+    </div>`;
+  });
+  h += `</div>`;
+  setHTML(h, fwd); renderNav();
+}
+
+function binIsYes(prog, target) {
+  if (!prog) return false;
+  const p = prog.trim().toLowerCase(), t = target.trim().toLowerCase();
+  return p === t || ['так','yes','1','true'].includes(p);
+}
+function setBin(i, isYes) {
+  const row = S.l5rows[i];
+  const val = isYes ? row['Target'] : row['Baseline'];
+  document.getElementById(`prog_${i}`).value = val;
+  document.getElementById(`bno_${i}`).className  = isYes ? '' : 'active-no';
+  document.getElementById(`byes_${i}`).className = isYes ? 'active-yes' : '';
+  refreshGauge(i);
+}
+function onProg(i) {
+  const row = S.l5rows[i], el = document.getElementById(`prog_${i}`);
+  const v = parseFloat(el.value), b = parseFloat(row['Baseline']), t = parseFloat(row['Target']);
+  el.classList.toggle('error', !isNaN(b) && !isNaN(t) && !isNaN(v) && (v < b || v > t));
+  refreshGauge(i);
+}
+function refreshGauge(i) {
+  const row = S.l5rows[i];
+  const prog = document.getElementById(`prog_${i}`).value;
+  const m = calcKR(row, prog);
+  document.getElementById(`gauge_${i}`).innerHTML = gauge(m, 88);
+}
+
+// ═══════════════════════════════════
+//  SAVE
+// ═══════════════════════════════════
+async function saveRow(i) {
+  guardSession();
+  const row = S.l5rows[i];
+  const progEl = document.getElementById(`prog_${i}`);
+  if (progEl.classList.contains('error')) { setSaveMsg(i, false, 'Невірне значення прогресу'); return; }
+  const newProg = progEl.value;
+  const newStat = document.getElementById(`stat_${i}`).value;
+  const btn = document.getElementById(`sbtn_${i}`);
+  btn.disabled = true; setSaveMsg(i, null, '');
+
+  try {
+    const rowN = row._row;
+    // K = Progress (col 11), L = Status (col 12)
+    await sheetsBatchUpdate(CFG.MAIN_SHEET, [
+      { range: `Sheet1!K${rowN}`, values: [[newProg]] },
+      { range: `Sheet1!L${rowN}`, values: [[newStat]] },
+    ]);
+
+    // Log
+    const now = new Date();
+    const off = kyivOffset(now);
+    const ts = new Date(now.getTime() + off * 3600000).toISOString().slice(0,-1) + (off >= 0 ? `+0${off}:00` : `-0${Math.abs(off)}:00`);
+    const krN = row['Назва квартального KR'];
+    await sheetsAppend(CFG.ACCESS_SHEET, 'Sheet2!A:E', [
+      [krN, 'Прогрес', newProg, S.email, ts],
+      [krN, 'Статус',  newStat, S.email, ts],
+    ]);
+
+    // Update local
+    S.l5rows[i]['Прогрес'] = newProg;
+    S.l5rows[i]['Статус']  = newStat;
+    // Also update in master rows
+    const masterRow = S.rows.find(r => r._row === row._row);
+    if (masterRow) { masterRow['Прогрес'] = newProg; masterRow['Статус'] = newStat; }
+
+    refreshGauge(i);
+    setSaveMsg(i, true, '✓ Збережено');
+    setTimeout(() => setSaveMsg(i, null, ''), 3000);
+  } catch(e) {
+    setSaveMsg(i, false, 'Помилка збереження. Спробуйте ще раз.');
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function setSaveMsg(i, ok, msg) {
+  const el = document.getElementById(`smsg_${i}`);
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'save-status' + (ok === true ? ' ok' : ok === false ? ' err' : '');
+}
+
+function kyivOffset(date) {
+  // Ukraine: UTC+2 (EET) in winter, UTC+3 (EEST) in summer (last Sun Mar → last Sun Oct)
+  const y = date.getUTCFullYear();
+  function lastSunday(month) {
+    const d = new Date(Date.UTC(y, month, 31));
+    d.setUTCDate(31 - d.getUTCDay());
+    return d;
+  }
+  const start = lastSunday(2); // last Sunday March
+  const end   = lastSunday(9); // last Sunday October
+  return (date >= start && date < end) ? 3 : 2;
+}
+
+// ═══════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════
+// Safe escape for JS string context (inside onclick='...')
+function esc4js(s) {
+  return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,'\\n');
+}
+
+function showLoad(t) { document.getElementById('loading-text').textContent = t||''; document.getElementById('loading').style.display='flex'; }
+function hideLoad() { document.getElementById('loading').style.display='none'; }
+function mainErr(msg) {
+  let el = document.getElementById('mainerr');
+  if (!el) { el = document.createElement('div'); el.id='mainerr'; el.className='error-banner'; document.getElementById('main-content').prepend(el); }
+  el.textContent = msg; el.classList.add('visible');
+}
+</script>
+</body>
+</html>
