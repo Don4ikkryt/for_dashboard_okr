@@ -386,7 +386,10 @@ function startSignIn() {
 
 async function checkAllowlist(email) {
   try {
-    const d = await sheetsGet(CFG.ACCESS_SHEET, 'Sheet1');
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CFG.ACCESS_SHEET}/values/${encodeURIComponent('Sheet1')}?key=${CFG.API_KEY}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
     const emails = (d.values || []).flat().map(e => (e||'').trim().toLowerCase());
     return emails.includes(email.toLowerCase());
   } catch(e) { return false; }
