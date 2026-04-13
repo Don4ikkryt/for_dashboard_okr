@@ -654,10 +654,76 @@ function changeYear(y) { S.year = y; renderL1(true); }
 function changeQuarter(q) { S.quarter = q === '' ? null : Number(q); renderL1(true); }
 
 // ═══════════════════════════════════
-//  LEVEL 2 — Annual Objectives
+//  LEVEL 2 — Annual Objectives  /  Quarter KR view
 // ═══════════════════════════════════
 function drill1(team) {
-  S.sel.team = team; S.navStack = [{ name: team }]; S.level = 2; renderL2(true);
+  S.sel.team = team; S.navStack = [{ name: team }]; S.level = 2;
+  if (S.quarter !== null) { renderTeamQ(true); } else { renderL2(true); }
+}
+
+function renderTeamQ(fwd) {
+  const rows = filtered().filter(r => r['Команда'] === S.sel.team);
+  S.l5rows = rows;
+  const map = {};
+  rows.forEach((r, i) => {
+    const k = r['Квартальна ціль'] || '—';
+    if (!map[k]) map[k] = [];
+    map[k].push({ row: r, i });
+  });
+
+  let h = `<div class="level-header">
+    <div><div class="level-title">${x(S.sel.team)}</div><div class="level-subtitle">Q${S.quarter} · ${S.year}</div></div>
+  </div>`;
+
+  Object.entries(map).forEach(([qobj, entries]) => {
+    const m = qObjMetric(entries.map(e => e.row));
+    h += `<div class="list-item" style="margin-bottom:8px;cursor:default;flex-direction:column;align-items:stretch;gap:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:14px;font-weight:600;color:var(--c-primary)">${x(qobj)}</div>
+        ${gauge(m, 56)}
+      </div>
+      <div class="kr-cards" style="margin:0;">`;
+    entries.forEach(({ row, i }) => {
+      const isBin = row['Тип'] === 'Бінарний показник';
+      const prog = row['Прогрес'] || row['Baseline'];
+      const stat = row['Статус'] || 'Вчасно';
+      const mv = calcKR(row, prog);
+      let progInput;
+      if (isBin) {
+        const isYes = binIsYes(prog, row['Target']);
+        progInput = `<div class="binary-toggle">
+          <button id="bno_${i}" class="${isYes?'':'active-no'}" onclick="setBin(${i},false)">${x(row['Baseline'])}</button>
+          <button id="byes_${i}" class="${isYes?'active-yes':''}" onclick="setBin(${i},true)">${x(row['Target'])}</button>
+        </div><input type="hidden" id="prog_${i}" value="${x(prog)}">`;
+      } else {
+        const bN = parseFloat(row['Baseline']), tN = parseFloat(row['Target']);
+        progInput = `<input type="number" class="kr-input" id="prog_${i}" value="${x(prog)}"
+          ${isNaN(bN)?'':` min="${bN}"`} ${isNaN(tN)?'':` max="${tN}"`}
+          step="any" oninput="onProg(${i})" placeholder="${x(row['Baseline'])}">`;
+      }
+      const statOpts = STATUSES.map(s => `<option value="${x(s)}"${s===stat?' selected':''}>${x(s)}</option>`).join('');
+      h += `<div class="kr-card" id="krc_${i}" data-row="${row._row}">
+        <div class="kr-card-header">
+          <div class="kr-card-title">${x(row['Назва квартального KR'])}</div>
+          <div id="gauge_${i}">${gauge(mv, 88)}</div>
+        </div>
+        <div class="kr-card-body">
+          <div class="kr-field"><label>Тип</label><div class="kr-field-value">${x(row['Тип'])}</div></div>
+          <div class="kr-field"><label>Baseline</label><div class="kr-field-value">${x(row['Baseline'])}</div></div>
+          <div class="kr-field"><label>Target</label><div class="kr-field-value">${x(row['Target'])}</div></div>
+          <div class="kr-field"><label>Прогрес</label>${progInput}</div>
+          <div class="kr-field"><label>Статус</label><select class="kr-select" id="stat_${i}">${statOpts}</select></div>
+        </div>
+        <div class="kr-card-footer">
+          <span class="save-status" id="smsg_${i}"></span>
+          <button class="btn-save" id="sbtn_${i}" onclick="saveRow(${i})">Зберегти</button>
+        </div>
+      </div>`;
+    });
+    h += `</div></div>`;
+  });
+
+  setHTML(h, fwd); renderNav();
 }
 function renderL2(fwd) {
   const rows = filtered().filter(r => r['Команда'] === S.sel.team);
