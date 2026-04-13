@@ -922,7 +922,7 @@ async function saveRow(i) {
       const off = kyivOffset(now);
       const ts = new Date(now.getTime() + off * 3600000).toISOString().slice(0,-1) + (off >= 0 ? `+0${off}:00` : `-0${Math.abs(off)}:00`);
       const krN = row['Назва квартального KR'];
-      await sheetsAppend(CFG.ACCESS_SHEET, 'Sheet2!A:E', [
+      await sheetsAppend('1lGCFNlXNuQvnPDVDLsqfiE0d9NLvGElRc8a1buDYwT0', 'Sheet1!A:E', [
         [krN, 'Прогрес', newProg, S.email, ts],
         [krN, 'Статус',  newStat, S.email, ts],
       ]);
