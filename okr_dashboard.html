@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OKR Моніторинг — МОН України</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -28,7 +29,7 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Roboto', sans-serif;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--c-bg);
   color: var(--c-text);
   min-width: 1280px;
@@ -539,7 +540,7 @@ function gauge(value, size) {
         transform="rotate(-90 ${cx} ${cy})"/>
       <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle"
         font-size="${fs}" font-weight="700" fill="${c}"
-        font-family="-apple-system,BlinkMacSystemFont,'Inter',sans-serif">${fmt(value)}</text>
+        font-family="'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif">${fmt(value)}</text>
     </svg>
   </div>`;
 }
