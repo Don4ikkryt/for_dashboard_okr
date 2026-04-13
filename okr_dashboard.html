@@ -611,7 +611,7 @@ function renderL1(fwd) {
   S.level = 1; S.navStack = [];
   const ys = years();
   const curY = String(new Date().getFullYear());
-  if (!S.year) S.year = ys.includes(curY) ? curY : (ys[0] || curY);
+  if (!S.year || !ys.includes(S.year)) S.year = ys[0] || curY;
 
   const rows = filtered();
   const teams = unique(rows, 'Команда').sort();
