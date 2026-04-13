@@ -131,9 +131,9 @@ main { flex: 1; padding: 28px 32px; }
 .level-title { font-size: 18px; font-weight: 700; color: var(--c-primary); }
 .level-subtitle { font-size: 13px; color: var(--c-text-muted); margin-top: 2px; }
 
-.year-selector { display: flex; align-items: center; gap: 8px; }
+.year-selector { display: flex; align-items: center; gap: 16px; }
 .year-selector label { font-size: 13px; color: var(--c-text-muted); }
-#year-select {
+#year-select, #quarter-select {
   border: 1px solid var(--c-border); border-radius: 6px;
   padding: 6px 12px; font-size: 14px; color: var(--c-text);
   background: var(--c-surface); cursor: pointer; outline: none;
@@ -332,6 +332,7 @@ let S = {
   token: null, expiry: null, email: null,
   rows: [],          // all raw rows from sheet
   year: null,        // selected year (string)
+  quarter: null,     // selected quarter (1-4) or null = all
   level: 1,          // current level 1-5
   navStack: [],      // [{name}] entries per drill-down
   sel: { team: null, obj: null, kr: null, qobj: null },
@@ -549,7 +550,13 @@ function gauge(value, size) {
 function years() {
   return [...new Set(S.rows.map(r=>r['Рік']).filter(Boolean))].sort((a,b)=>Number(b)-Number(a));
 }
-function filtered() { return S.rows.filter(r => String(r['Рік']) === String(S.year)); }
+function filtered() {
+  return S.rows.filter(r => {
+    if (String(r['Рік']) !== String(S.year)) return false;
+    if (S.quarter !== null && String(r['Квартал']) !== String(S.quarter)) return false;
+    return true;
+  });
+}
 
 function renderNav() {
   const labels = ['Команди', ...S.navStack.map(s=>s.name)];
@@ -616,6 +623,11 @@ function renderL1(fwd) {
       <select id="year-select" onchange="changeYear(this.value)">
         ${ys.map(y=>`<option value="${y}"${y===S.year?' selected':''}>${y}</option>`).join('')}
       </select>
+      <label>Квартал:</label>
+      <select id="quarter-select" onchange="changeQuarter(this.value)">
+        <option value=""${S.quarter===null?' selected':''}>Всі</option>
+        ${[1,2,3,4].map(q=>`<option value="${q}"${S.quarter===q?' selected':''}>Q${q}</option>`).join('')}
+      </select>
     </div>
   </div>
   <div id="mainerr" class="error-banner"></div>`;
@@ -639,6 +651,7 @@ function renderL1(fwd) {
 }
 
 function changeYear(y) { S.year = y; renderL1(true); }
+function changeQuarter(q) { S.quarter = q === '' ? null : Number(q); renderL1(true); }
 
 // ═══════════════════════════════════
 //  LEVEL 2 — Annual Objectives
