@@ -1165,6 +1165,7 @@ function buildAddForm() {
 
   const fType = fg('af-type','Тип показника', `<select class="form-select" id="af-krtype" onchange="onKRTypeChange(this.value)">
     <option value="Числовий показник">Числовий показник</option>
+    <option value="Відсотковий показник">Відсотковий показник</option>
     <option value="Бінарний показник">Бінарний показник</option>
   </select>`);
 
@@ -1225,6 +1226,14 @@ function validateQKR(baseline, target, type) {
     const b = parseFloat(baseline), t = parseFloat(target);
     if (isNaN(b)) return 'Baseline має бути числом';
     if (isNaN(t)) return 'Target має бути числом';
+    if (b === t) return 'Baseline і Target не можуть бути однаковими';
+  }
+  if (type === 'Відсотковий показник') {
+    const b = parseFloat(baseline), t = parseFloat(target);
+    if (isNaN(b)) return 'Baseline має бути числом (0–100)';
+    if (isNaN(t)) return 'Target має бути числом (0–100)';
+    if (b < 0 || b > 100) return 'Baseline має бути від 0 до 100';
+    if (t < 0 || t > 100) return 'Target має бути від 0 до 100';
     if (b === t) return 'Baseline і Target не можуть бути однаковими';
   }
   return null;
