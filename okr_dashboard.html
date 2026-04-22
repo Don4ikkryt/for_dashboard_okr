@@ -945,7 +945,8 @@ function renderL5(fwd) {
         <div class="kr-field"><label>Статус</label><select class="kr-select" id="stat_${i}">${statOpts}</select></div>
       </div>
       <div class="kr-card-footer">
-        <button class="btn-del-kr" onclick="deleteItem('qKR',${row._row})">Видалити</button>
+        <button class="btn-icon del" onclick="deleteItem('qKR',${row._row})" title="Видалити">🗑</button>
+        <button class="btn-icon" onclick="openEditKRModal(${i})" title="Редагувати">✏</button>
         <span class="save-status" id="smsg_${i}"></span>
         <button class="btn-save" id="sbtn_${i}" onclick="saveRow(${i})">Зберегти</button>
       </div>
@@ -1144,6 +1145,96 @@ async function submitRename() {
       range: `${sheetName}!${col}${r._row}`, values: [[newVal]]
     })));
     logAction('Редагування', RENAME.key, RENAME.key, newVal);
+    closeAddModal();
+    await loadData();
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Зберегти';
+    alert('Помилка: ' + e.message);
+  }
+}
+
+// ═══════════════════════════════════
+//  EDIT KR MODAL (level 5)
+// ═══════════════════════════════════
+let EDIT_KR = { rowIdx: -1, row: null };
+
+function openEditKRModal(i) {
+  EDIT_KR.rowIdx = i;
+  EDIT_KR.row = S.l5rows[i];
+  const row = EDIT_KR.row;
+
+  const typeOpts = ['Числовий показник', 'Відсотковий показник', 'Бінарний показник']
+    .map(t => `<option value="${x(t)}"${t === row['Тип'] ? ' selected' : ''}>${x(t)}</option>`).join('');
+  const statOpts = STATUSES
+    .map(s => `<option value="${x(s)}"${s === (row['Статус'] || 'Вчасно') ? ' selected' : ''}>${x(s)}</option>`).join('');
+
+  document.getElementById('add-modal-content').innerHTML = `
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">Редагувати квартальний KR</div>
+      <button class="modal-close" onclick="closeAddModal()">×</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
+      ${fg('ekr-name', 'Назва квартального KR', `<input class="form-input" id="ekr-name" value="${x(row['Назва квартального KR'])}">`)}
+      ${fg('ekr-type', 'Тип показника', `<select class="form-select" id="ekr-type">${typeOpts}</select>`)}
+      ${fg('ekr-bl',   'Baseline', `<input class="form-input" id="ekr-bl" value="${x(row['Baseline'])}">`)}
+      ${fg('ekr-tg',   'Target',   `<input class="form-input" id="ekr-tg" value="${x(row['Target'])}">`)}
+      ${fg('ekr-prog', 'Прогрес',  `<input class="form-input" id="ekr-prog" value="${x(row['Прогрес'] || row['Baseline'])}">`)}
+      ${fg('ekr-stat', 'Статус',   `<select class="form-select" id="ekr-stat">${statOpts}</select>`)}
+      <div id="ekr-err"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeAddModal()">Скасувати</button>
+      <button class="btn-submit" id="btn-ekr-ok" onclick="submitEditKR()">Зберегти</button>
+    </div>
+  </div>`;
+  document.getElementById('add-modal').style.display = 'flex';
+}
+
+async function submitEditKR() {
+  const newName = gv('ekr-name');
+  const newType = gv('ekr-type');
+  const newBl   = gv('ekr-bl');
+  const newTg   = gv('ekr-tg');
+  const newProg = gv('ekr-prog');
+  const newStat = gv('ekr-stat');
+
+  if (!newName) { markErr('ekr-name', 'Введіть назву'); return; }
+
+  const err = validateQKR(newBl, newTg, newType);
+  if (err) {
+    document.getElementById('ekr-err').innerHTML = `<div class="form-err">⚠ ${x(err)}</div>`;
+    return;
+  }
+
+  const row = EDIT_KR.row;
+  const sheetName = S.teamType === 'S' ? 'Sheet2' : 'Sheet1';
+  const hdrs = S.teamType === 'S' ? S.hdrsS : S.hdrsP;
+  const colOf = name => { const idx = hdrs.indexOf(name); return idx >= 0 ? String.fromCharCode(65 + idx) : null; };
+
+  const fields = {
+    'Назва квартального KR': newName,
+    'Тип':      newType,
+    'Baseline': newBl,
+    'Target':   newTg,
+    'Прогрес':  newProg,
+    'Статус':   newStat,
+  };
+
+  const updates = Object.entries(fields).reduce((acc, [colName, val]) => {
+    const col = colOf(colName);
+    if (col) acc.push({ range: `${sheetName}!${col}${row._row}`, values: [[val]] });
+    return acc;
+  }, []);
+
+  const btn = document.getElementById('btn-ekr-ok');
+  btn.disabled = true; btn.textContent = 'Збереження...';
+
+  try {
+    await sheetsBatchUpdate(CFG.MAIN_SHEET, updates);
+    const oldVal = `Назва:${row['Назва квартального KR']}|Тип:${row['Тип']}|Baseline:${row['Baseline']}|Target:${row['Target']}|Прогрес:${row['Прогрес']}|Статус:${row['Статус']}`;
+    const newVal = `Назва:${newName}|Тип:${newType}|Baseline:${newBl}|Target:${newTg}|Прогрес:${newProg}|Статус:${newStat}`;
+    logAction('Редагування', row['Назва квартального KR'], oldVal, newVal);
     closeAddModal();
     await loadData();
   } catch(e) {
