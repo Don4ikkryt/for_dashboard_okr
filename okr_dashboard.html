@@ -203,6 +203,12 @@ main { flex: 1; padding: 28px 32px; }
 .btn-submit:disabled { opacity:.5;cursor:not-allowed; }
 .btn-add { display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:6px;font-size:13px;font-weight:500;border:1px solid var(--c-primary-light);background:var(--c-accent);color:var(--c-primary);cursor:pointer;font-family:inherit;transition:background .15s;white-space:nowrap; }
 .btn-add:hover { background:#d4e3f5; }
+.item-actions { display:flex;gap:4px;align-items:center;margin-left:auto;margin-right:8px;flex-shrink:0; }
+.btn-icon { background:none;border:1px solid transparent;border-radius:5px;cursor:pointer;padding:4px 7px;font-size:13px;color:var(--c-text-muted);font-family:inherit;line-height:1;transition:background .15s,color .15s,border-color .15s; }
+.btn-icon:hover { background:var(--c-accent);border-color:var(--c-border);color:var(--c-text); }
+.btn-icon.del:hover { background:var(--c-red-bg);border-color:var(--c-red);color:var(--c-red); }
+.btn-del-kr { padding:5px 12px;border-radius:5px;font-size:12px;font-weight:500;border:1px solid var(--c-border);background:none;color:var(--c-text-muted);cursor:pointer;font-family:inherit;transition:background .15s,color .15s; }
+.btn-del-kr:hover { background:var(--c-red-bg);border-color:var(--c-red);color:var(--c-red); }
 
 /* TEAM TYPE TOGGLE */
 .team-type-toggle { display: flex; border: 1px solid var(--c-border); border-radius: 6px; overflow: hidden; }
@@ -800,6 +806,10 @@ function renderL2(fwd) {
     const m = objMetric(rows.filter(r => r['Назва річної цілі'] === obj));
     h += `<div class="list-item" onclick="drill2('${esc4js(obj)}')">
       <div class="list-item-info"><div class="list-item-name">${x(obj)}</div><div class="list-item-meta">${x(S.year)}</div></div>
+      <div class="item-actions">
+        <button class="btn-icon" onclick="event.stopPropagation();openRenameModal('annObj','${esc4js(obj)}')" title="Редагувати">✏</button>
+        <button class="btn-icon del" onclick="event.stopPropagation();deleteItem('annObj','${esc4js(obj)}')" title="Видалити">✕</button>
+      </div>
       ${gauge(m, 76)}
     </div>`;
   });
@@ -824,6 +834,10 @@ function renderL3(fwd) {
     const m = annualKRMetric(rows.filter(r => r['Назва річного KR'] === kr));
     h += `<div class="list-item" onclick="drill3('${esc4js(kr)}')">
       <div class="list-item-info"><div class="list-item-name">${x(kr)}</div></div>
+      <div class="item-actions">
+        <button class="btn-icon" onclick="event.stopPropagation();openRenameModal('annKR','${esc4js(kr)}')" title="Редагувати">✏</button>
+        <button class="btn-icon del" onclick="event.stopPropagation();deleteItem('annKR','${esc4js(kr)}')" title="Видалити">✕</button>
+      </div>
       ${gauge(m, 76)}
     </div>`;
   });
@@ -861,6 +875,10 @@ function renderL4(fwd) {
       <div class="list-item-info">
         <div class="list-item-name">${x(qobj)}</div>
         <div class="list-item-meta"><span class="quarter-badge">Q${info.q}</span></div>
+      </div>
+      <div class="item-actions">
+        <button class="btn-icon" onclick="event.stopPropagation();openRenameModal('qObj','${esc4js(qobj)}')" title="Редагувати">✏</button>
+        <button class="btn-icon del" onclick="event.stopPropagation();deleteItem('qObj','${esc4js(qobj)}')" title="Видалити">✕</button>
       </div>
       ${gauge(m, 76)}
     </div>`;
@@ -927,6 +945,7 @@ function renderL5(fwd) {
         <div class="kr-field"><label>Статус</label><select class="kr-select" id="stat_${i}">${statOpts}</select></div>
       </div>
       <div class="kr-card-footer">
+        <button class="btn-del-kr" onclick="deleteItem('qKR',${row._row})">Видалити</button>
         <span class="save-status" id="smsg_${i}"></span>
         <button class="btn-save" id="sbtn_${i}" onclick="saveRow(${i})">Зберегти</button>
       </div>
@@ -983,17 +1002,8 @@ async function saveRow(i) {
       { range: `${sheetName}!L${rowN}`, values: [[newStat]] },
     ]);
 
-    // Log (best-effort, doesn't block save)
-    try {
-      const now = new Date();
-      const off = kyivOffset(now);
-      const ts = new Date(now.getTime() + off * 3600000).toISOString().slice(0,-1) + (off >= 0 ? `+0${off}:00` : `-0${Math.abs(off)}:00`);
-      const krN = row['Назва квартального KR'];
-      await sheetsAppend('1lGCFNlXNuQvnPDVDLsqfiE0d9NLvGElRc8a1buDYwT0', 'Sheet1!A:E', [
-        [krN, 'Прогрес', newProg, S.email, ts],
-        [krN, 'Статус',  newStat, S.email, ts],
-      ]);
-    } catch(logErr) { console.warn('Log failed:', logErr); }
+    // Log (best-effort)
+    logAction('Оновлення', row['Назва квартального KR'], `Прогрес:${row['Прогрес']}|Статус:${row['Статус']}`, `Прогрес:${newProg}|Статус:${newStat}`);
 
     // Update local
     S.l5rows[i]['Прогрес'] = newProg;
@@ -1047,6 +1057,145 @@ function mainErr(msg) {
   let el = document.getElementById('mainerr');
   if (!el) { el = document.createElement('div'); el.id='mainerr'; el.className='error-banner'; document.getElementById('main-content').prepend(el); }
   el.textContent = msg; el.classList.add('visible');
+}
+
+// ═══════════════════════════════════
+//  LOGGING
+// ═══════════════════════════════════
+async function logAction(action, itemName, oldVal, newVal) {
+  try {
+    const now = new Date();
+    const off = kyivOffset(now);
+    const ts = new Date(now.getTime() + off * 3600000).toISOString().slice(0,-1) + (off >= 0 ? `+0${off}:00` : `-0${Math.abs(off)}:00`);
+    await sheetsAppend('1lGCFNlXNuQvnPDVDLsqfiE0d9NLvGElRc8a1buDYwT0', 'Sheet1!A:F', [
+      [itemName, action, oldVal, newVal, S.email, ts]
+    ]);
+  } catch(e) { console.warn('Log failed:', e); }
+}
+
+// ═══════════════════════════════════
+//  RENAME MODAL (levels 2-4)
+// ═══════════════════════════════════
+let RENAME = { type:'', key:'' };
+
+const RENAME_COL = {
+  annObj: 'Назва річної цілі',
+  annKR:  'Назва річного KR',
+  qObj:   'Квартальна ціль',
+};
+const RENAME_LABEL = {
+  annObj: 'Назва річної цілі',
+  annKR:  'Назва річного KR',
+  qObj:   'Назва квартальної цілі',
+};
+
+function openRenameModal(type, key) {
+  RENAME = { type, key };
+  document.getElementById('add-modal-content').innerHTML = `
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">Редагувати</div>
+      <button class="modal-close" onclick="closeAddModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">${RENAME_LABEL[type] || 'Назва'}</label>
+        <input class="form-input" id="rm-val" value="${x(key)}" placeholder="Нова назва">
+      </div>
+      <div id="rm-err"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeAddModal()">Скасувати</button>
+      <button class="btn-submit" id="btn-rm-ok" onclick="submitRename()">Зберегти</button>
+    </div>
+  </div>`;
+  document.getElementById('add-modal').style.display = 'flex';
+}
+
+async function submitRename() {
+  const newVal = gv('rm-val');
+  if (!newVal) { document.getElementById('rm-err').innerHTML = '<div class="form-err">Введіть назву</div>'; return; }
+  if (newVal === RENAME.key) { closeAddModal(); return; }
+
+  const sheetName = S.teamType === 'S' ? 'Sheet2' : 'Sheet1';
+  const hdrs = S.teamType === 'S' ? S.hdrsS : S.hdrsP;
+  const allRows = S.teamType === 'S' ? S.rowsS : S.rowsP;
+  const colName = RENAME_COL[RENAME.type];
+  const colIdx = hdrs.indexOf(colName);
+  if (colIdx < 0) { alert('Не знайдено колонку'); return; }
+  const col = String.fromCharCode(65 + colIdx);
+
+  let matchRows = [];
+  if (RENAME.type === 'annObj') {
+    matchRows = allRows.filter(r => r['Команда']===S.sel.team && r['Рік']===S.year && r['Назва річної цілі']===RENAME.key);
+  } else if (RENAME.type === 'annKR') {
+    matchRows = allRows.filter(r => r['Команда']===S.sel.team && r['Рік']===S.year && r['Назва річної цілі']===S.sel.obj && r['Назва річного KR']===RENAME.key);
+  } else if (RENAME.type === 'qObj') {
+    matchRows = allRows.filter(r => r['Команда']===S.sel.team && r['Рік']===S.year && r['Назва річної цілі']===S.sel.obj && r['Назва річного KR']===S.sel.kr && r['Квартальна ціль']===RENAME.key);
+  }
+
+  if (!matchRows.length) { closeAddModal(); return; }
+
+  const btn = document.getElementById('btn-rm-ok');
+  btn.disabled = true; btn.textContent = 'Збереження...';
+
+  try {
+    await sheetsBatchUpdate(CFG.MAIN_SHEET, matchRows.map(r => ({
+      range: `${sheetName}!${col}${r._row}`, values: [[newVal]]
+    })));
+    logAction('Редагування', RENAME.key, RENAME.key, newVal);
+    closeAddModal();
+    await loadData();
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Зберегти';
+    alert('Помилка: ' + e.message);
+  }
+}
+
+// ═══════════════════════════════════
+//  DELETE
+// ═══════════════════════════════════
+async function deleteItem(type, key) {
+  const labels = { annObj:'Річну ціль', annKR:'Річний KR', qObj:'Квартальну ціль', qKR:'Квартальний KR' };
+  const msg = type === 'qKR'
+    ? `Видалити цей квартальний KR?`
+    : `Видалити "${key}" та всі пов'язані записи?`;
+  if (!confirm(msg)) return;
+
+  const sheetName = S.teamType === 'S' ? 'Sheet2' : 'Sheet1';
+  const hdrs = S.teamType === 'S' ? S.hdrsS : S.hdrsP;
+  const allRows = S.teamType === 'S' ? S.rowsS : S.rowsP;
+  const colCount = hdrs.length || 12;
+  const colEnd = String.fromCharCode(64 + colCount);
+
+  let matchRows = [];
+  if (type === 'annObj') {
+    matchRows = allRows.filter(r => r['Команда']===S.sel.team && r['Рік']===S.year && r['Назва річної цілі']===key);
+  } else if (type === 'annKR') {
+    matchRows = allRows.filter(r => r['Команда']===S.sel.team && r['Рік']===S.year && r['Назва річної цілі']===S.sel.obj && r['Назва річного KR']===key);
+  } else if (type === 'qObj') {
+    matchRows = allRows.filter(r => r['Команда']===S.sel.team && r['Рік']===S.year && r['Назва річної цілі']===S.sel.obj && r['Назва річного KR']===S.sel.kr && r['Квартальна ціль']===key);
+  } else if (type === 'qKR') {
+    matchRows = allRows.filter(r => r._row === Number(key));
+  }
+
+  if (!matchRows.length) return;
+
+  try {
+    await sheetsBatchUpdate(CFG.MAIN_SHEET, matchRows.map(r => ({
+      range: `${sheetName}!A${r._row}:${colEnd}${r._row}`,
+      values: [Array(colCount).fill('')]
+    })));
+    logAction('Видалення', type === 'qKR' ? (matchRows[0]?.['Назва квартального KR'] || String(key)) : key, key, '');
+
+    // navigate back if needed
+    if (type === 'annObj') { S.sel.obj = null; S.sel.kr = null; S.sel.qobj = null; }
+    if (type === 'annKR')  { S.sel.kr = null; S.sel.qobj = null; }
+    if (type === 'qObj')   { S.sel.qobj = null; }
+    await loadData();
+  } catch(e) {
+    alert('Помилка видалення: ' + e.message);
+  }
 }
 
 // ═══════════════════════════════════
@@ -1324,6 +1473,8 @@ async function submitAdd() {
   try {
     const colEnd = hdrs.length ? String.fromCharCode(64 + hdrs.length) : 'Z';
     await sheetsAppend(CFG.MAIN_SHEET, `${sheetName}!A:${colEnd}`, [row]);
+    const addedName = rowData['Назва квартального KR'] || rowData['Квартальна ціль'] || rowData['Назва річного KR'] || rowData['Назва річної цілі'] || '';
+    logAction('Додавання', addedName, '', JSON.stringify(rowData));
     closeAddModal();
     await loadData();
   } catch(e) {
