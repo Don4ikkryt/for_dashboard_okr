@@ -1404,7 +1404,7 @@ function showTransferDetails(i) {
   const row    = S.l5rows[i];
   const prev   = row['Попередній квартал'] || '—';   // stored as "Q1 - Назва цілі"
   const reason = row['Причина переносу']   || '—';
-  const curQ   = row['Квартал'] ? `Q${row['Квартал']}` : '—';
+  const curQ   = row['Квартал'] ? `Q${row['Квартал']}${row['Квартальна ціль'] ? ' - ' + row['Квартальна ціль'] : ''}` : '—';
 
   document.getElementById('add-modal-content').innerHTML = `
   <div class="modal-card" onclick="event.stopPropagation()" style="max-width:440px;">
