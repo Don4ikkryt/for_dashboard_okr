@@ -528,6 +528,27 @@ async function loadData() {
   }
 }
 
+async function reloadAndStay() {
+  guardSession();
+  showLoad('Завантаження даних...');
+  try {
+    const [d1, d2] = await Promise.all([
+      sheetsGet(CFG.MAIN_SHEET, 'Sheet1'),
+      sheetsGet(CFG.MAIN_SHEET, 'Sheet2'),
+    ]);
+    const p1 = parseSheet(d1.values), p2 = parseSheet(d2.values);
+    S.rowsP = p1.rows; S.hdrsP = p1.hdrs;
+    S.rowsS = p2.rows; S.hdrsS = p2.hdrs;
+    S.rows = S.teamType === 'S' ? S.rowsS : S.rowsP;
+    hideLoad();
+    render(false);
+  } catch(e) {
+    hideLoad();
+    mainErr('Не вдалося завантажити дані. Перевірте з\'єднання.');
+    console.error(e);
+  }
+}
+
 // ═══════════════════════════════════
 //  API HELPERS
 // ═══════════════════════════════════
@@ -677,7 +698,8 @@ function goLevel(n) {
 }
 function render(fwd) {
   switch(S.level) {
-    case 1: renderL1(fwd); break; case 2: renderL2(fwd); break;
+    case 1: renderL1(fwd); break;
+    case 2: (S.quarter !== null ? renderTeamQ(fwd) : renderL2(fwd)); break;
     case 3: renderL3(fwd); break; case 4: renderL4(fwd); break;
     case 5: renderL5(fwd); break;
   }
@@ -1289,9 +1311,23 @@ function openTransferModal(i) {
   const row = TRANSFER.row;
   const curQ = row['Квартал'] || S.quarter || '';
 
-  const qOpts = [1,2,3,4]
-    .filter(q => String(q) !== String(curQ))
-    .map(q => `<option value="${q}">Q${q}</option>`).join('');
+  // Build flat list of "Q[n] - Квартальна ціль" from existing rows (other quarters, same team+year)
+  const allRows = S.teamType === 'S' ? S.rowsS : S.rowsP;
+  const seen = new Set();
+  const qGoalOptions = [];
+  allRows.forEach(r => {
+    if (r['Команда'] !== S.sel.team) return;
+    if (String(r['Рік']) !== String(S.year)) return;
+    const q = r['Квартал'], goal = r['Квартальна ціль'];
+    if (!q || !goal || String(q) === String(curQ)) return;
+    const key = `${q}|||${goal}`;
+    if (!seen.has(key)) { seen.add(key); qGoalOptions.push({ q, goal, key }); }
+  });
+  qGoalOptions.sort((a, b) => Number(a.q) - Number(b.q));
+
+  const qGoalOpts = qGoalOptions.length
+    ? qGoalOptions.map(o => `<option value="${x(o.key)}">Q${o.q} - ${x(o.goal)}</option>`).join('')
+    : '<option value="" disabled>Немає доступних квартальних цілей</option>';
 
   document.getElementById('add-modal-content').innerHTML = `
   <div class="modal-card" onclick="event.stopPropagation()" style="max-width:480px;">
@@ -1302,9 +1338,9 @@ function openTransferModal(i) {
     <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
       <div style="font-size:13px;padding:10px 12px;background:var(--c-accent);border-radius:6px;color:var(--c-text)">
         <b>${x(row['Назва квартального KR'])}</b><br>
-        <span style="color:var(--c-text-muted)">Поточний квартал: Q${x(String(curQ))}</span>
+        <span style="color:var(--c-text-muted)">Зараз: Q${x(String(curQ))} · ${x(row['Квартальна ціль'] || '')}</span>
       </div>
-      ${fg('tr-q', 'Перенести в квартал', `<select class="form-select" id="tr-q"><option value="">— оберіть —</option>${qOpts}</select>`)}
+      ${fg('tr-qgoal', 'Перенести до', `<select class="form-select" id="tr-qgoal"><option value="">— оберіть квартальну ціль —</option>${qGoalOpts}</select>`)}
       ${fg('tr-reason', 'Причина переносу', `<textarea class="form-input" id="tr-reason" rows="3" placeholder="Вкажіть причину переносу..." style="resize:vertical;min-height:80px;"></textarea>`)}
       <div id="tr-err"></div>
     </div>
@@ -1317,12 +1353,14 @@ function openTransferModal(i) {
 }
 
 async function submitTransfer() {
-  const newQ   = gv('tr-q');
-  const reason = document.getElementById('tr-reason') ? document.getElementById('tr-reason').value.trim() : '';
+  const qGoalVal = gv('tr-qgoal');
+  const reason   = document.getElementById('tr-reason') ? document.getElementById('tr-reason').value.trim() : '';
 
   const errEl = document.getElementById('tr-err');
-  if (!newQ)   { errEl.innerHTML = '<div class="form-err">Оберіть квартал</div>'; return; }
-  if (!reason) { errEl.innerHTML = '<div class="form-err">Вкажіть причину переносу</div>'; return; }
+  if (!qGoalVal) { errEl.innerHTML = '<div class="form-err">Оберіть квартальну ціль</div>'; return; }
+  if (!reason)   { errEl.innerHTML = '<div class="form-err">Вкажіть причину переносу</div>'; return; }
+
+  const [newQ, newGoal] = qGoalVal.split('|||');
 
   const row = TRANSFER.row;
   const sheetName = S.teamType === 'S' ? 'Sheet2' : 'Sheet1';
@@ -1334,6 +1372,7 @@ async function submitTransfer() {
 
   const fields = {
     'Квартал':            String(newQ),
+    'Квартальна ціль':    newGoal,
     'Чи перенесено':      'Так',
     'Попередній квартал': prevGoal ? `Q${prevQ} - ${prevGoal}` : `Q${prevQ}`,
     'Причина переносу':   reason,
@@ -1350,9 +1389,9 @@ async function submitTransfer() {
 
   try {
     await sheetsBatchUpdate(CFG.MAIN_SHEET, updates);
-    logAction('Перенесення', row['Назва квартального KR'], `Q${prevQ}`, `Q${newQ} · ${reason}`);
+    logAction('Перенесення', row['Назва квартального KR'], `Q${prevQ} - ${prevGoal}`, `Q${newQ} - ${newGoal} · ${reason}`);
     closeAddModal();
-    await loadData();
+    await reloadAndStay();
   } catch(e) {
     btn.disabled = false; btn.textContent = 'Перенести';
     alert('Помилка: ' + e.message);
