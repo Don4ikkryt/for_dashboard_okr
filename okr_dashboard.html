@@ -278,7 +278,8 @@ main { flex: 1; padding: 28px 32px; }
 .save-status { font-size: 13px; font-weight: 500; display: none; }
 .save-status.ok { color: var(--c-green); display: inline; }
 .save-status.err { color: var(--c-red); display: inline; }
-.transferred-badge { display:inline-flex;align-items:center;gap:5px;background:#fff3e0;color:#e65100;border:1px solid #ffb74d;border-radius:12px;padding:3px 10px;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s; }
+.transfer-indicator { padding:6px 0 2px; }
+.transferred-badge { display:inline-flex;align-items:center;gap:5px;background:#fff3e0;color:#e65100;border:1px solid #ffb74d;border-radius:12px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s; }
 .transferred-badge:hover { background:#ffe0b2; }
 .btn-transfer { background:none;border:1px solid transparent;border-radius:6px;cursor:pointer;padding:8px 12px;font-size:20px;color:var(--c-text-muted);font-family:inherit;line-height:1;transition:background .15s,color .15s,border-color .15s; }
 .btn-transfer:hover { background:#e3f2fd;border-color:#90caf9;color:#1565c0; }
@@ -805,17 +806,13 @@ function renderTeamQ(fwd) {
           <div class="kr-card-title">${x(row['Назва квартального KR'])}</div>
           <div id="gauge_${i}">${gauge(mv, 88)}</div>
         </div>
+        ${row['Чи перенесено'] === 'Так' ? `<div class="transfer-indicator"><button class="transferred-badge" onclick="showTransferDetails(${i})">↗ Перенесено · деталі</button></div>` : ''}
         <div class="kr-card-body">
           <div class="kr-field"><label>Тип</label><div class="kr-field-value">${x(row['Тип'])}</div></div>
           <div class="kr-field"><label>Baseline</label><div class="kr-field-value">${x(row['Baseline'])}</div></div>
           <div class="kr-field"><label>Target</label><div class="kr-field-value">${x(row['Target'])}</div></div>
           <div class="kr-field"><label>Прогрес</label>${progInput}</div>
-          <div class="kr-field"><label>Статус</label>
-            <div style="display:flex;align-items:center;gap:6px;">
-              <select class="kr-select" id="stat_${i}">${statOpts}</select>
-              ${stat === 'Перенесено' ? `<button class="transferred-badge" onclick="showTransferDetails(${i})">↗ Деталі</button>` : ''}
-            </div>
-          </div>
+          <div class="kr-field"><label>Статус</label><select class="kr-select" id="stat_${i}">${statOpts}</select></div>
         </div>
         <div class="kr-card-footer">
           <button class="btn-icon del" onclick="deleteItem('qKR',${row._row})" title="Видалити">✕</button>
@@ -926,7 +923,7 @@ function renderL4(fwd) {
 // ═══════════════════════════════════
 //  LEVEL 5 — Quarterly KRs
 // ═══════════════════════════════════
-const STATUSES = ['Вчасно', '⚠️ Під загрозою', '🔴 Не виконується', '⏸️ Призупинено', 'Перенесено'];
+const STATUSES = ['Вчасно', '⚠️ Під загрозою', '🔴 Не виконується', '⏸️ Призупинено'];
 
 function drill4(qobj) {
   S.sel.qobj = qobj;
@@ -973,17 +970,13 @@ function renderL5(fwd) {
         <div class="kr-card-title">${x(row['Назва квартального KR'])}</div>
         <div id="gauge_${i}">${gauge(m, 88)}</div>
       </div>
+      ${row['Чи перенесено'] === 'Так' ? `<div class="transfer-indicator"><button class="transferred-badge" onclick="showTransferDetails(${i})">↗ Перенесено · деталі</button></div>` : ''}
       <div class="kr-card-body">
         <div class="kr-field"><label>Тип</label><div class="kr-field-value">${x(row['Тип'])}</div></div>
         <div class="kr-field"><label>Baseline</label><div class="kr-field-value">${x(row['Baseline'])}</div></div>
         <div class="kr-field"><label>Target</label><div class="kr-field-value">${x(row['Target'])}</div></div>
         <div class="kr-field"><label>Прогрес</label>${progInput}</div>
-        <div class="kr-field"><label>Статус</label>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <select class="kr-select" id="stat_${i}">${statOpts}</select>
-            ${stat === 'Перенесено' ? `<button class="transferred-badge" onclick="showTransferDetails(${i})">↗ Деталі</button>` : ''}
-          </div>
-        </div>
+        <div class="kr-field"><label>Статус</label><select class="kr-select" id="stat_${i}">${statOpts}</select></div>
       </div>
       <div class="kr-card-footer">
         <button class="btn-icon del" onclick="deleteItem('qKR',${row._row})" title="Видалити">✕</button>
@@ -1336,13 +1329,13 @@ async function submitTransfer() {
   const hdrs = S.teamType === 'S' ? S.hdrsS : S.hdrsP;
   const colOf = name => { const idx = hdrs.indexOf(name); return idx >= 0 ? String.fromCharCode(65 + idx) : null; };
 
-  const prevQ = row['Квартал'] || S.quarter || '';
+  const prevQ    = row['Квартал'] || S.quarter || '';
+  const prevGoal = row['Квартальна ціль'] || '';
 
   const fields = {
     'Квартал':            String(newQ),
-    'Статус':             'Перенесено',
     'Чи перенесено':      'Так',
-    'Попередній квартал': String(prevQ),
+    'Попередній квартал': prevGoal ? `Q${prevQ} - ${prevGoal}` : `Q${prevQ}`,
     'Причина переносу':   reason,
   };
 
@@ -1367,13 +1360,13 @@ async function submitTransfer() {
 }
 
 function showTransferDetails(i) {
-  const row = S.l5rows[i];
-  const prevQ  = row['Попередній квартал'] ? `Q${row['Попередній квартал']}` : '—';
-  const reason = row['Причина переносу'] || '—';
+  const row    = S.l5rows[i];
+  const prev   = row['Попередній квартал'] || '—';   // stored as "Q1 - Назва цілі"
+  const reason = row['Причина переносу']   || '—';
   const curQ   = row['Квартал'] ? `Q${row['Квартал']}` : '—';
 
   document.getElementById('add-modal-content').innerHTML = `
-  <div class="modal-card" onclick="event.stopPropagation()" style="max-width:420px;">
+  <div class="modal-card" onclick="event.stopPropagation()" style="max-width:440px;">
     <div class="modal-header">
       <div class="modal-title">Деталі переносу</div>
       <button class="modal-close" onclick="closeAddModal()">×</button>
@@ -1383,15 +1376,15 @@ function showTransferDetails(i) {
         <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--c-text-muted);margin-bottom:4px;">KR</div>
         <div style="font-weight:600;font-size:14px;">${x(row['Назва квартального KR'])}</div>
       </div>
-      <div style="display:flex;gap:24px;">
-        <div>
-          <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--c-text-muted);margin-bottom:4px;">Попередній квартал</div>
-          <div style="font-weight:600;font-size:18px;color:var(--c-text-muted);">${x(prevQ)}</div>
+      <div style="display:flex;align-items:flex-start;gap:16px;">
+        <div style="flex:1;">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--c-text-muted);margin-bottom:6px;">Було</div>
+          <div style="font-weight:600;font-size:14px;color:var(--c-text-muted);">${x(prev)}</div>
         </div>
-        <div style="font-size:22px;align-self:center;color:var(--c-text-muted);">→</div>
-        <div>
-          <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--c-text-muted);margin-bottom:4px;">Перенесено в</div>
-          <div style="font-weight:600;font-size:18px;color:var(--c-primary);">${x(curQ)}</div>
+        <div style="font-size:20px;padding-top:22px;color:var(--c-text-muted);">→</div>
+        <div style="flex:1;">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--c-text-muted);margin-bottom:6px;">Стало</div>
+          <div style="font-weight:600;font-size:14px;color:var(--c-primary);">${x(curQ)}</div>
         </div>
       </div>
       <div>
