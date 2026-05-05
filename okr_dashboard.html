@@ -806,7 +806,6 @@ function renderTeamQ(fwd) {
           <div class="kr-card-title">${x(row['Назва квартального KR'])}</div>
           <div id="gauge_${i}">${gauge(mv, 88)}</div>
         </div>
-        ${row['Чи перенесено'] === 'Так' ? `<div class="transfer-indicator"><button class="transferred-badge" onclick="showTransferDetails(${i})">↗ Перенесено · деталі</button></div>` : ''}
         <div class="kr-card-body">
           <div class="kr-field"><label>Тип</label><div class="kr-field-value">${x(row['Тип'])}</div></div>
           <div class="kr-field"><label>Baseline</label><div class="kr-field-value">${x(row['Baseline'])}</div></div>
@@ -815,6 +814,7 @@ function renderTeamQ(fwd) {
           <div class="kr-field"><label>Статус</label><select class="kr-select" id="stat_${i}">${statOpts}</select></div>
         </div>
         <div class="kr-card-footer">
+          ${row['Чи перенесено'] === 'Так' ? `<button class="transferred-badge" onclick="showTransferDetails(${i})" style="margin-right:auto;">↗ Перенесено · деталі</button>` : ''}
           <button class="btn-icon del" onclick="deleteItem('qKR',${row._row})" title="Видалити">✕</button>
           <button class="btn-icon" onclick="openEditKRModal(${i})" title="Редагувати">✏</button>
           <button class="btn-transfer" onclick="openTransferModal(${i})" title="Перенести на інший квартал">↗</button>
@@ -970,7 +970,6 @@ function renderL5(fwd) {
         <div class="kr-card-title">${x(row['Назва квартального KR'])}</div>
         <div id="gauge_${i}">${gauge(m, 88)}</div>
       </div>
-      ${row['Чи перенесено'] === 'Так' ? `<div class="transfer-indicator"><button class="transferred-badge" onclick="showTransferDetails(${i})">↗ Перенесено · деталі</button></div>` : ''}
       <div class="kr-card-body">
         <div class="kr-field"><label>Тип</label><div class="kr-field-value">${x(row['Тип'])}</div></div>
         <div class="kr-field"><label>Baseline</label><div class="kr-field-value">${x(row['Baseline'])}</div></div>
@@ -979,6 +978,7 @@ function renderL5(fwd) {
         <div class="kr-field"><label>Статус</label><select class="kr-select" id="stat_${i}">${statOpts}</select></div>
       </div>
       <div class="kr-card-footer">
+        ${row['Чи перенесено'] === 'Так' ? `<button class="transferred-badge" onclick="showTransferDetails(${i})" style="margin-right:auto;">↗ Перенесено · деталі</button>` : ''}
         <button class="btn-icon del" onclick="deleteItem('qKR',${row._row})" title="Видалити">✕</button>
         <button class="btn-icon" onclick="openEditKRModal(${i})" title="Редагувати">✏</button>
         <button class="btn-transfer" onclick="openTransferModal(${i})" title="Перенести на інший квартал">↗</button>
