@@ -1318,6 +1318,8 @@ function openTransferModal(i) {
   allRows.forEach(r => {
     if (r['Команда'] !== S.sel.team) return;
     if (String(r['Рік']) !== String(S.year)) return;
+    if (r['Назва річної цілі'] !== row['Назва річної цілі']) return;
+    if (r['Назва річного KR']  !== row['Назва річного KR'])  return;
     const q = r['Квартал'], goal = r['Квартальна ціль'];
     if (!q || !goal || String(q) === String(curQ)) return;
     const key = `${q}|||${goal}`;
