@@ -809,6 +809,8 @@ function renderTeamQ(fwd) {
           <div class="kr-field"><label>Статус</label><select class="kr-select" id="stat_${i}">${statOpts}</select></div>
         </div>
         <div class="kr-card-footer">
+          <button class="btn-icon del" onclick="deleteItem('qKR',${row._row})" title="Видалити">✕</button>
+          <button class="btn-icon" onclick="openEditKRModal(${i})" title="Редагувати">✏</button>
           <span class="save-status" id="smsg_${i}"></span>
           <button class="btn-save" id="sbtn_${i}" onclick="saveRow(${i})">Зберегти</button>
         </div>
