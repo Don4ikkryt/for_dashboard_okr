@@ -278,6 +278,10 @@ main { flex: 1; padding: 28px 32px; }
 .save-status { font-size: 13px; font-weight: 500; display: none; }
 .save-status.ok { color: var(--c-green); display: inline; }
 .save-status.err { color: var(--c-red); display: inline; }
+.transferred-badge { display:inline-flex;align-items:center;gap:5px;background:#fff3e0;color:#e65100;border:1px solid #ffb74d;border-radius:12px;padding:3px 10px;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s; }
+.transferred-badge:hover { background:#ffe0b2; }
+.btn-transfer { background:none;border:1px solid transparent;border-radius:6px;cursor:pointer;padding:8px 12px;font-size:20px;color:var(--c-text-muted);font-family:inherit;line-height:1;transition:background .15s,color .15s,border-color .15s; }
+.btn-transfer:hover { background:#e3f2fd;border-color:#90caf9;color:#1565c0; }
 
 /* LOADING */
 .loading-overlay {
@@ -806,11 +810,17 @@ function renderTeamQ(fwd) {
           <div class="kr-field"><label>Baseline</label><div class="kr-field-value">${x(row['Baseline'])}</div></div>
           <div class="kr-field"><label>Target</label><div class="kr-field-value">${x(row['Target'])}</div></div>
           <div class="kr-field"><label>Прогрес</label>${progInput}</div>
-          <div class="kr-field"><label>Статус</label><select class="kr-select" id="stat_${i}">${statOpts}</select></div>
+          <div class="kr-field"><label>Статус</label>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <select class="kr-select" id="stat_${i}">${statOpts}</select>
+              ${stat === 'Перенесено' ? `<button class="transferred-badge" onclick="showTransferDetails(${i})">↗ Деталі</button>` : ''}
+            </div>
+          </div>
         </div>
         <div class="kr-card-footer">
           <button class="btn-icon del" onclick="deleteItem('qKR',${row._row})" title="Видалити">✕</button>
           <button class="btn-icon" onclick="openEditKRModal(${i})" title="Редагувати">✏</button>
+          <button class="btn-transfer" onclick="openTransferModal(${i})" title="Перенести на інший квартал">↗</button>
           <span class="save-status" id="smsg_${i}"></span>
           <button class="btn-save" id="sbtn_${i}" onclick="saveRow(${i})">Зберегти</button>
         </div>
@@ -916,7 +926,7 @@ function renderL4(fwd) {
 // ═══════════════════════════════════
 //  LEVEL 5 — Quarterly KRs
 // ═══════════════════════════════════
-const STATUSES = ['Вчасно', '⚠️ Під загрозою', '🔴 Не виконується', '⏸️ Призупинено'];
+const STATUSES = ['Вчасно', '⚠️ Під загрозою', '🔴 Не виконується', '⏸️ Призупинено', 'Перенесено'];
 
 function drill4(qobj) {
   S.sel.qobj = qobj;
@@ -968,11 +978,17 @@ function renderL5(fwd) {
         <div class="kr-field"><label>Baseline</label><div class="kr-field-value">${x(row['Baseline'])}</div></div>
         <div class="kr-field"><label>Target</label><div class="kr-field-value">${x(row['Target'])}</div></div>
         <div class="kr-field"><label>Прогрес</label>${progInput}</div>
-        <div class="kr-field"><label>Статус</label><select class="kr-select" id="stat_${i}">${statOpts}</select></div>
+        <div class="kr-field"><label>Статус</label>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <select class="kr-select" id="stat_${i}">${statOpts}</select>
+            ${stat === 'Перенесено' ? `<button class="transferred-badge" onclick="showTransferDetails(${i})">↗ Деталі</button>` : ''}
+          </div>
+        </div>
       </div>
       <div class="kr-card-footer">
         <button class="btn-icon del" onclick="deleteItem('qKR',${row._row})" title="Видалити">✕</button>
         <button class="btn-icon" onclick="openEditKRModal(${i})" title="Редагувати">✏</button>
+        <button class="btn-transfer" onclick="openTransferModal(${i})" title="Перенести на інший квартал">↗</button>
         <span class="save-status" id="smsg_${i}"></span>
         <button class="btn-save" id="sbtn_${i}" onclick="saveRow(${i})">Зберегти</button>
       </div>
@@ -1267,6 +1283,127 @@ async function submitEditKR() {
     btn.disabled = false; btn.textContent = 'Зберегти';
     alert('Помилка: ' + e.message);
   }
+}
+
+// ═══════════════════════════════════
+//  TRANSFER KR MODAL
+// ═══════════════════════════════════
+let TRANSFER = { rowIdx: -1, row: null };
+
+function openTransferModal(i) {
+  TRANSFER.rowIdx = i;
+  TRANSFER.row = S.l5rows[i];
+  const row = TRANSFER.row;
+  const curQ = row['Квартал'] || S.quarter || '';
+
+  const qOpts = [1,2,3,4]
+    .filter(q => String(q) !== String(curQ))
+    .map(q => `<option value="${q}">Q${q}</option>`).join('');
+
+  document.getElementById('add-modal-content').innerHTML = `
+  <div class="modal-card" onclick="event.stopPropagation()" style="max-width:480px;">
+    <div class="modal-header">
+      <div class="modal-title">Перенести KR на інший квартал</div>
+      <button class="modal-close" onclick="closeAddModal()">×</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
+      <div style="font-size:13px;padding:10px 12px;background:var(--c-accent);border-radius:6px;color:var(--c-text)">
+        <b>${x(row['Назва квартального KR'])}</b><br>
+        <span style="color:var(--c-text-muted)">Поточний квартал: Q${x(String(curQ))}</span>
+      </div>
+      ${fg('tr-q', 'Перенести в квартал', `<select class="form-select" id="tr-q"><option value="">— оберіть —</option>${qOpts}</select>`)}
+      ${fg('tr-reason', 'Причина переносу', `<textarea class="form-input" id="tr-reason" rows="3" placeholder="Вкажіть причину переносу..." style="resize:vertical;min-height:80px;"></textarea>`)}
+      <div id="tr-err"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeAddModal()">Скасувати</button>
+      <button class="btn-submit" id="btn-tr-ok" onclick="submitTransfer()">Перенести</button>
+    </div>
+  </div>`;
+  document.getElementById('add-modal').style.display = 'flex';
+}
+
+async function submitTransfer() {
+  const newQ   = gv('tr-q');
+  const reason = document.getElementById('tr-reason') ? document.getElementById('tr-reason').value.trim() : '';
+
+  const errEl = document.getElementById('tr-err');
+  if (!newQ)   { errEl.innerHTML = '<div class="form-err">Оберіть квартал</div>'; return; }
+  if (!reason) { errEl.innerHTML = '<div class="form-err">Вкажіть причину переносу</div>'; return; }
+
+  const row = TRANSFER.row;
+  const sheetName = S.teamType === 'S' ? 'Sheet2' : 'Sheet1';
+  const hdrs = S.teamType === 'S' ? S.hdrsS : S.hdrsP;
+  const colOf = name => { const idx = hdrs.indexOf(name); return idx >= 0 ? String.fromCharCode(65 + idx) : null; };
+
+  const prevQ = row['Квартал'] || S.quarter || '';
+
+  const fields = {
+    'Квартал':            String(newQ),
+    'Статус':             'Перенесено',
+    'Чи перенесено':      'Так',
+    'Попередній квартал': String(prevQ),
+    'Причина переносу':   reason,
+  };
+
+  const updates = Object.entries(fields).reduce((acc, [colName, val]) => {
+    const col = colOf(colName);
+    if (col) acc.push({ range: `${sheetName}!${col}${row._row}`, values: [[val]] });
+    return acc;
+  }, []);
+
+  const btn = document.getElementById('btn-tr-ok');
+  btn.disabled = true; btn.textContent = 'Збереження...';
+
+  try {
+    await sheetsBatchUpdate(CFG.MAIN_SHEET, updates);
+    logAction('Перенесення', row['Назва квартального KR'], `Q${prevQ}`, `Q${newQ} · ${reason}`);
+    closeAddModal();
+    await loadData();
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Перенести';
+    alert('Помилка: ' + e.message);
+  }
+}
+
+function showTransferDetails(i) {
+  const row = S.l5rows[i];
+  const prevQ  = row['Попередній квартал'] ? `Q${row['Попередній квартал']}` : '—';
+  const reason = row['Причина переносу'] || '—';
+  const curQ   = row['Квартал'] ? `Q${row['Квартал']}` : '—';
+
+  document.getElementById('add-modal-content').innerHTML = `
+  <div class="modal-card" onclick="event.stopPropagation()" style="max-width:420px;">
+    <div class="modal-header">
+      <div class="modal-title">Деталі переносу</div>
+      <button class="modal-close" onclick="closeAddModal()">×</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:16px;">
+      <div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--c-text-muted);margin-bottom:4px;">KR</div>
+        <div style="font-weight:600;font-size:14px;">${x(row['Назва квартального KR'])}</div>
+      </div>
+      <div style="display:flex;gap:24px;">
+        <div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--c-text-muted);margin-bottom:4px;">Попередній квартал</div>
+          <div style="font-weight:600;font-size:18px;color:var(--c-text-muted);">${x(prevQ)}</div>
+        </div>
+        <div style="font-size:22px;align-self:center;color:var(--c-text-muted);">→</div>
+        <div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--c-text-muted);margin-bottom:4px;">Перенесено в</div>
+          <div style="font-weight:600;font-size:18px;color:var(--c-primary);">${x(curQ)}</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--c-text-muted);margin-bottom:4px;">Причина переносу</div>
+        <div style="font-size:14px;line-height:1.5;">${x(reason)}</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-submit" onclick="closeAddModal()">Закрити</button>
+    </div>
+  </div>`;
+  document.getElementById('add-modal').style.display = 'flex';
 }
 
 // ═══════════════════════════════════
