@@ -906,7 +906,10 @@ function renderL3(fwd) {
   krs.forEach(kr => {
     const m = annualKRMetric(rows.filter(r => r['Назва річного KR'] === kr));
     h += `<div class="list-item" onclick="drill3('${esc4js(kr)}')">
-      <div class="list-item-info"><div class="list-item-name">${x(kr)}</div></div>
+      <div class="list-item-info">
+        <div class="list-item-name">${x(kr)}</div>
+        <div class="list-item-meta">Річна ціль: ${x(S.sel.obj)}</div>
+      </div>
       <div class="item-actions">
         <button class="btn-icon" onclick="event.stopPropagation();openRenameModal('annKR','${esc4js(kr)}')" title="Редагувати">✏</button>
         <button class="btn-icon del" onclick="event.stopPropagation();deleteItem('annKR','${esc4js(kr)}')" title="Видалити">✕</button>
@@ -947,7 +950,7 @@ function renderL4(fwd) {
     h += `<div class="list-item" onclick="drill4('${esc4js(qobj)}')">
       <div class="list-item-info">
         <div class="list-item-name">${x(qobj)}</div>
-        <div class="list-item-meta"><span class="quarter-badge">Q${info.q}</span></div>
+        <div class="list-item-meta"><span class="quarter-badge">Q${info.q}</span> Річна ціль: ${x(S.sel.obj)} · Річний KR: ${x(S.sel.kr)}</div>
       </div>
       <div class="item-actions">
         <button class="btn-icon" onclick="event.stopPropagation();openRenameModal('qObj','${esc4js(qobj)}')" title="Редагувати">✏</button>
@@ -1010,6 +1013,7 @@ function renderL5(fwd) {
         <div class="kr-card-header-left">
           <div class="kr-card-title">${x(row['Назва квартального KR'])}</div>
           <div class="kr-card-meta">
+            <span><span class="kr-meta-label">Річна ціль:</span> ${x(S.sel.obj)}</span>
             <span><span class="kr-meta-label">Річний KR:</span> ${x(S.sel.kr)}</span>
             <span><span class="kr-meta-label">Квартальна ціль:</span> ${x(S.sel.qobj)}</span>
           </div>
