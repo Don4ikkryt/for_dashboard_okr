@@ -232,6 +232,9 @@ main { flex: 1; padding: 28px 32px; }
 }
 .kr-card-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 14px; }
 .kr-card-title { flex: 1; font-size: 14px; font-weight: 600; color: var(--c-primary); line-height: 1.5; }
+.kr-card-meta { display: flex; flex-direction: column; gap: 3px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--c-border); }
+.kr-card-meta span { font-size: 12px; color: var(--c-text-muted); line-height: 1.4; }
+.kr-meta-label { font-weight: 600; color: var(--c-text); }
 .kr-card-body {
   display: grid;
   grid-template-columns: 180px 120px 120px 200px 220px;
@@ -973,7 +976,7 @@ function renderL5(fwd) {
     r['Назва річного KR'] === S.sel.kr && r['Квартальна ціль'] === S.sel.qobj
   );
   let h = `<div class="level-header">
-    <div><div class="level-title">Квартальні KR</div><div class="level-subtitle">${x(S.sel.qobj)}</div></div>
+    <div><div class="level-title">Квартальні KR</div></div>
   </div><div class="kr-cards">`;
 
   S.l5rows.forEach((row, i) => {
@@ -1006,6 +1009,10 @@ function renderL5(fwd) {
       <div class="kr-card-header">
         <div class="kr-card-title">${x(row['Назва квартального KR'])}</div>
         <div id="gauge_${i}">${gauge(m, 88)}</div>
+      </div>
+      <div class="kr-card-meta">
+        <span><span class="kr-meta-label">Річний KR:</span> ${x(S.sel.kr)}</span>
+        <span><span class="kr-meta-label">Квартальна ціль:</span> ${x(S.sel.qobj)}</span>
       </div>
       <div class="kr-card-body">
         <div class="kr-field"><label>Тип</label><div class="kr-field-value">${x(row['Тип'])}</div></div>
