@@ -475,6 +475,7 @@ async function checkAllowlist(email) {
 
 function signOut() {
   localStorage.removeItem('okr_sess');
+  sessionStorage.removeItem('okr_nav');
   S = { token:null, expiry:null, email:null, rows:[], rowsP:[], rowsS:[], hdrsP:[], hdrsS:[], teamType:'P', year:null, quarter:null, level:1, navStack:[], sel:{team:null,obj:null,kr:null,qobj:null}, l5rows:[] };
   document.getElementById('app').style.display = 'none';
   document.getElementById('auth-screen').style.display = 'flex';
@@ -518,9 +519,16 @@ async function loadData() {
     const p1 = parseSheet(d1.values), p2 = parseSheet(d2.values);
     S.rowsP = p1.rows; S.hdrsP = p1.hdrs;
     S.rowsS = p2.rows; S.hdrsS = p2.hdrs;
+    const saved = sessionStorage.getItem('okr_nav');
+    if (saved) {
+      try {
+        const nav = JSON.parse(saved);
+        Object.assign(S, { teamType: nav.teamType, year: nav.year, quarter: nav.quarter, level: nav.level, sel: nav.sel, navStack: nav.navStack });
+      } catch(e) {}
+    }
     S.rows = S.teamType === 'S' ? S.rowsS : S.rowsP;
     hideLoad();
-    renderL1(true);
+    render(false);
   } catch(e) {
     hideLoad();
     mainErr('Не вдалося завантажити дані. Перевірте з\'єднання.');
@@ -696,6 +704,11 @@ function goLevel(n) {
   S.navStack = S.navStack.slice(0, n - 1); S.level = n;
   render(false);
 }
+function saveNavState() {
+  const nav = { teamType: S.teamType, year: S.year, quarter: S.quarter, level: S.level, sel: S.sel, navStack: S.navStack };
+  sessionStorage.setItem('okr_nav', JSON.stringify(nav));
+}
+
 function render(fwd) {
   switch(S.level) {
     case 1: renderL1(fwd); break;
@@ -703,6 +716,7 @@ function render(fwd) {
     case 3: renderL3(fwd); break; case 4: renderL4(fwd); break;
     case 5: renderL5(fwd); break;
   }
+  saveNavState();
 }
 
 function setHTML(html, fwd) {
@@ -768,6 +782,7 @@ function renderL1(fwd) {
   }
   setHTML(h, fwd);
   renderNav();
+  saveNavState();
 }
 
 function changeYear(y) { S.year = y; renderL1(true); }
@@ -820,7 +835,7 @@ function renderTeamQ(fwd) {
         const bN = parseFloat(row['Baseline']), tN = parseFloat(row['Target']);
         progInput = `<input type="number" class="kr-input" id="prog_${i}" value="${x(prog)}"
           ${isNaN(bN)?'':` min="${bN}"`} ${isNaN(tN)?'':` max="${tN}"`}
-          step="any" oninput="onProg(${i})" placeholder="${x(row['Baseline'])}">`;
+          step="any" oninput="onPr1og(${i})" placeholder="${x(row['Baseline'])}">`;
       }
       const statOpts = STATUSES.map(s => `<option value="${x(s)}"${s===stat?' selected':''}>${x(s)}</option>`).join('');
       h += `<div class="kr-card" id="krc_${i}" data-row="${row._row}">
