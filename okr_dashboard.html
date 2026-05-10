@@ -230,9 +230,9 @@ main { flex: 1; padding: 28px 32px; }
   border-radius: var(--radius); padding: 18px 22px;
   box-shadow: var(--shadow-sm);
 }
-.kr-card-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 14px; }
+.kr-card-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 6px; }
 .kr-card-title { flex: 1; font-size: 14px; font-weight: 600; color: var(--c-primary); line-height: 1.5; }
-.kr-card-meta { display: flex; flex-direction: column; gap: 3px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--c-border); }
+.kr-card-meta { display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--c-border); }
 .kr-card-meta span { font-size: 12px; color: var(--c-text-muted); line-height: 1.4; }
 .kr-meta-label { font-weight: 600; color: var(--c-text); }
 .kr-card-body {
@@ -719,12 +719,12 @@ function render(fwd) {
     case 3: renderL3(fwd); break; case 4: renderL4(fwd); break;
     case 5: renderL5(fwd); break;
   }
-  saveNavState();
 }
 
 function setHTML(html, fwd) {
   document.getElementById('main-content').innerHTML =
     `<div class="${fwd ? 'anim-forward' : 'anim-back'}">${html}</div>`;
+  saveNavState();
 }
 
 function trunc(s, n) { return s.length > n ? s.slice(0, n-1) + '…' : s; }
@@ -785,7 +785,6 @@ function renderL1(fwd) {
   }
   setHTML(h, fwd);
   renderNav();
-  saveNavState();
 }
 
 function changeYear(y) { S.year = y; renderL1(true); }
