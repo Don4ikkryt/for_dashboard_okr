@@ -954,7 +954,10 @@ function renderL4(fwd) {
     h += `<div class="list-item" onclick="drill4('${esc4js(qobj)}')">
       <div class="list-item-info">
         <div class="list-item-name">${x(qobj)}</div>
-        <div class="list-item-meta"><span class="quarter-badge">Q${info.q}</span> Річна ціль: ${x(S.sel.obj)} · Річний KR: ${x(S.sel.kr)}</div>
+        <div class="list-item-meta" style="flex-direction:column;gap:2px;align-items:flex-start;">
+          <div><span class="quarter-badge">Q${info.q}</span> Річна ціль: ${x(S.sel.obj)}</div>
+          <div>Річний KR: ${x(S.sel.kr)}</div>
+        </div>
       </div>
       <div class="item-actions">
         <button class="btn-icon" onclick="event.stopPropagation();openRenameModal('qObj','${esc4js(qobj)}')" title="Редагувати">✏</button>
