@@ -953,9 +953,9 @@ function renderL4(fwd) {
     const m = qObjMetric(info.rows);
     h += `<div class="list-item" onclick="drill4('${esc4js(qobj)}')">
       <div class="list-item-info">
-        <div class="list-item-name">${x(qobj)}</div>
+        <div class="list-item-name">${x(qobj)} <span class="quarter-badge" style="margin-left:4px;">Q${info.q}</span></div>
         <div class="list-item-meta" style="flex-direction:column;gap:2px;align-items:flex-start;">
-          <div><span class="quarter-badge">Q${info.q}</span> Річна ціль: ${x(S.sel.obj)}</div>
+          <div>Річна ціль: ${x(S.sel.obj)}</div>
           <div>Річний KR: ${x(S.sel.kr)}</div>
         </div>
       </div>
