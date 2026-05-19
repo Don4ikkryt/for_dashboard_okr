@@ -236,6 +236,7 @@ main { flex: 1; padding: 28px 32px; }
 .kr-card-meta { display: flex; flex-direction: column; gap: 2px; padding-top: 6px; border-top: 1px solid var(--c-border); }
 .kr-card-meta span { font-size: 12px; color: var(--c-text-muted); line-height: 1.4; }
 .kr-meta-label { font-weight: 600; color: var(--c-text); }
+.kr-last-modified { font-size: 11px; color: var(--c-text-muted); margin-right: auto; }
 .kr-card-body {
   display: grid;
   grid-template-columns: 180px 120px 120px 200px 220px;
@@ -859,6 +860,7 @@ function renderTeamQ(fwd) {
         </div>
         <div class="kr-card-footer">
           ${row['Чи перенесено'] === 'Так' ? `<button class="transferred-badge" onclick="showTransferDetails(${i})" style="margin-right:auto;">↗ Перенесено · деталі</button>` : ''}
+          ${row['Остання зміна'] ? `<span class="kr-last-modified">Змінено: ${x(row['Остання зміна'])}</span>` : ''}
           <button class="btn-icon del" onclick="deleteItem('qKR',${row._row})" title="Видалити">✕</button>
           <button class="btn-icon" onclick="openEditKRModal(${i})" title="Редагувати">✏</button>
           <button class="btn-transfer" onclick="openTransferModal(${i})" title="Перенести на інший квартал">↗</button>
@@ -1036,6 +1038,7 @@ function renderL5(fwd) {
       </div>
       <div class="kr-card-footer">
         ${row['Чи перенесено'] === 'Так' ? `<button class="transferred-badge" onclick="showTransferDetails(${i})" style="margin-right:auto;">↗ Перенесено · деталі</button>` : ''}
+        ${row['Остання зміна'] ? `<span class="kr-last-modified">Змінено: ${x(row['Остання зміна'])}</span>` : ''}
         <button class="btn-icon del" onclick="deleteItem('qKR',${row._row})" title="Видалити">✕</button>
         <button class="btn-icon" onclick="openEditKRModal(${i})" title="Редагувати">✏</button>
         <button class="btn-transfer" onclick="openTransferModal(${i})" title="Перенести на інший квартал">↗</button>
@@ -1090,10 +1093,16 @@ async function saveRow(i) {
   try {
     const rowN = row._row;
     const sheetName = S.teamType === 'S' ? 'Sheet2' : 'Sheet1';
-    await sheetsBatchUpdate(CFG.MAIN_SHEET, [
+    const hdrs = S.teamType === 'S' ? S.hdrsS : S.hdrsP;
+    const colOf = name => { const idx = hdrs.indexOf(name); return idx >= 0 ? String.fromCharCode(65 + idx) : null; };
+    const ts = kyivNow();
+    const updates = [
       { range: `${sheetName}!K${rowN}`, values: [[newProg]] },
       { range: `${sheetName}!L${rowN}`, values: [[newStat]] },
-    ]);
+    ];
+    const tsCol = colOf('Остання зміна');
+    if (tsCol) updates.push({ range: `${sheetName}!${tsCol}${rowN}`, values: [[ts]] });
+    await sheetsBatchUpdate(CFG.MAIN_SHEET, updates);
 
     // Log (best-effort)
     logAction('Оновлення', row['Назва квартального KR'], `Прогрес:${row['Прогрес']}|Статус:${row['Статус']}`, `Прогрес:${newProg}|Статус:${newStat}`);
@@ -1101,9 +1110,10 @@ async function saveRow(i) {
     // Update local
     S.l5rows[i]['Прогрес'] = newProg;
     S.l5rows[i]['Статус']  = newStat;
+    if (tsCol) { S.l5rows[i]['Остання зміна'] = ts; }
     // Also update in master rows
     const masterRow = S.rows.find(r => r._row === row._row);
-    if (masterRow) { masterRow['Прогрес'] = newProg; masterRow['Статус'] = newStat; }
+    if (masterRow) { masterRow['Прогрес'] = newProg; masterRow['Статус'] = newStat; if (tsCol) masterRow['Остання зміна'] = ts; }
 
     refreshGauge(i);
     setSaveMsg(i, true, '✓ Збережено');
@@ -1134,6 +1144,13 @@ function kyivOffset(date) {
   const start = lastSunday(2); // last Sunday March
   const end   = lastSunday(9); // last Sunday October
   return (date >= start && date < end) ? 3 : 2;
+}
+function kyivNow() {
+  const now = new Date();
+  const off = kyivOffset(now);
+  const local = new Date(now.getTime() + off * 3600000);
+  const pad = n => String(n).padStart(2, '0');
+  return `${pad(local.getUTCDate())}.${pad(local.getUTCMonth()+1)}.${local.getUTCFullYear()} ${pad(local.getUTCHours())}:${pad(local.getUTCMinutes())}`;
 }
 
 // ═══════════════════════════════════
@@ -1311,6 +1328,7 @@ async function submitEditKR() {
     'Target':   newTg,
     'Прогрес':  newProg,
     'Статус':   newStat,
+    'Остання зміна': kyivNow(),
   };
 
   const updates = Object.entries(fields).reduce((acc, [colName, val]) => {
