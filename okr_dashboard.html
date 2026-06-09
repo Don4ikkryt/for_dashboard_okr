@@ -237,6 +237,8 @@ main { flex: 1; padding: 28px 32px; }
 .kr-card-meta span { font-size: 12px; color: var(--c-text-muted); line-height: 1.4; }
 .kr-meta-label { font-weight: 600; color: var(--c-text); }
 .kr-last-modified { font-size: 11px; color: var(--c-text-muted); margin-right: auto; }
+.transfer-stat { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; background: #fff3e0; color: #e65100; border: 1px solid #ffb74d; border-radius: 10px; padding: 2px 8px; }
+.team-transfer-stat { font-size: 11px; font-weight: 600; color: #e65100; }
 .kr-card-body {
   display: grid;
   grid-template-columns: 180px 120px 120px 200px 220px;
@@ -258,6 +260,13 @@ main { flex: 1; padding: 28px 32px; }
   padding: 7px 10px; font-size: 13px; color: var(--c-text);
   width: 100%; outline: none; background: var(--c-surface); cursor: pointer;
 }
+.kr-textarea {
+  border: 1px solid var(--c-border); border-radius: 5px;
+  padding: 7px 10px; font-size: 13px; color: var(--c-text);
+  width: 100%; outline: none; resize: vertical; min-height: 60px;
+  font-family: inherit; background: var(--c-surface); transition: border-color .15s;
+}
+.kr-textarea:focus { border-color: var(--c-primary-light); }
 .kr-select:focus { border-color: var(--c-primary-light); }
 .binary-toggle { display: flex; border: 1px solid var(--c-border); border-radius: 5px; overflow: hidden; }
 .binary-toggle button {
@@ -636,6 +645,17 @@ function annualKRMetric(rows) {
 }
 function qObjMetric(rows) { return avg(rows.map(r => calcKR(r))); }
 
+function transferPct(team, quarter) {
+  if (!quarter) return null;
+  const qStr = String(quarter);
+  const all = S.rows.filter(r => String(r['Рік']) === String(S.year) && r['Команда'] === team);
+  const transferred = all.filter(r => r['Чи перенесено'] === 'Так' && (r['Попередній квартал'] || '').startsWith(`Q${quarter}`));
+  const native = all.filter(r => String(r['Квартал']) === qStr && r['Чи перенесено'] !== 'Так');
+  const total = native.length + transferred.length;
+  if (!total) return null;
+  return { pct: Math.round(transferred.length / total * 100), count: transferred.length, total };
+}
+
 function unique(rows, col) { return [...new Set(rows.map(r => r[col]).filter(Boolean))]; }
 function fmt(v) { return (Math.round(v*10)/10).toFixed(1) + '%'; }
 function color(v) { return v <= 33 ? '#d93025' : v <= 66 ? '#e07b00' : '#1a7a3c'; }
@@ -778,9 +798,12 @@ function renderL1(fwd) {
     teams.forEach(team => {
       const tr = rows.filter(r => r['Команда'] === team);
       const m = teamMetric(tr);
+      const tp = transferPct(team, S.quarter);
+      const tpLabel = tp && tp.count > 0 ? `<div class="team-transfer-stat">↗ ${tp.pct}% перенесено</div>` : '';
       h += `<div class="team-card" onclick="drill1('${esc4js(team)}')">
         ${gauge(m, 96)}
         <div class="card-name">${x(team)}</div>
+        ${tpLabel}
       </div>`;
     });
     h += `</div>`;
@@ -811,8 +834,13 @@ function renderTeamQ(fwd) {
     map[k].push({ row: r, i });
   });
 
+  const tp = transferPct(S.sel.team, S.quarter);
+  const tpBadge = tp ? `<span class="transfer-stat">↗ ${tp.pct}% перенесено (${tp.count}/${tp.total})</span>` : '';
   let h = `<div class="level-header">
-    <div><div class="level-title">${x(S.sel.team)}</div><div class="level-subtitle">Q${S.quarter} · ${S.year}</div></div>
+    <div>
+      <div class="level-title">${x(S.sel.team)}</div>
+      <div class="level-subtitle" style="display:flex;align-items:center;gap:8px;">Q${S.quarter} · ${S.year} ${tpBadge}</div>
+    </div>
   </div>`;
 
   Object.entries(map).forEach(([qobj, entries]) => {
@@ -857,6 +885,7 @@ function renderTeamQ(fwd) {
           <div class="kr-field"><label>Target</label><div class="kr-field-value">${x(row['Target'])}</div></div>
           <div class="kr-field"><label>Прогрес</label>${progInput}</div>
           <div class="kr-field"><label>Статус</label><select class="kr-select" id="stat_${i}">${statOpts}</select></div>
+          <div class="kr-field"><label>Коментар</label><textarea class="kr-textarea" id="comm_${i}" placeholder="Введіть коментар...">${x(row['Коментар'] || '')}</textarea></div>
         </div>
         <div class="kr-card-footer">
           ${row['Чи перенесено'] === 'Так' ? `<button class="transferred-badge" onclick="showTransferDetails(${i})" style="margin-right:auto;">↗ Перенесено · деталі</button>` : ''}
@@ -1035,6 +1064,7 @@ function renderL5(fwd) {
         <div class="kr-field"><label>Target</label><div class="kr-field-value">${x(row['Target'])}</div></div>
         <div class="kr-field"><label>Прогрес</label>${progInput}</div>
         <div class="kr-field"><label>Статус</label><select class="kr-select" id="stat_${i}">${statOpts}</select></div>
+        <div class="kr-field"><label>Коментар</label><textarea class="kr-textarea" id="comm_${i}" placeholder="Введіть коментар...">${x(row['Коментар'] || '')}</textarea></div>
       </div>
       <div class="kr-card-footer">
         ${row['Чи перенесено'] === 'Так' ? `<button class="transferred-badge" onclick="showTransferDetails(${i})" style="margin-right:auto;">↗ Перенесено · деталі</button>` : ''}
@@ -1096,12 +1126,15 @@ async function saveRow(i) {
     const hdrs = S.teamType === 'S' ? S.hdrsS : S.hdrsP;
     const colOf = name => { const idx = hdrs.indexOf(name); return idx >= 0 ? String.fromCharCode(65 + idx) : null; };
     const ts = kyivNow();
+    const newComm = (document.getElementById(`comm_${i}`)?.value || '').trim();
     const updates = [
       { range: `${sheetName}!K${rowN}`, values: [[newProg]] },
       { range: `${sheetName}!L${rowN}`, values: [[newStat]] },
     ];
     const tsCol = colOf('Остання зміна');
     if (tsCol) updates.push({ range: `${sheetName}!${tsCol}${rowN}`, values: [[ts]] });
+    const commCol = colOf('Коментар');
+    if (commCol) updates.push({ range: `${sheetName}!${commCol}${rowN}`, values: [[newComm]] });
     await sheetsBatchUpdate(CFG.MAIN_SHEET, updates);
 
     // Log (best-effort)
@@ -1111,9 +1144,10 @@ async function saveRow(i) {
     S.l5rows[i]['Прогрес'] = newProg;
     S.l5rows[i]['Статус']  = newStat;
     if (tsCol) { S.l5rows[i]['Остання зміна'] = ts; }
+    if (commCol) { S.l5rows[i]['Коментар'] = newComm; }
     // Also update in master rows
     const masterRow = S.rows.find(r => r._row === row._row);
-    if (masterRow) { masterRow['Прогрес'] = newProg; masterRow['Статус'] = newStat; if (tsCol) masterRow['Остання зміна'] = ts; }
+    if (masterRow) { masterRow['Прогрес'] = newProg; masterRow['Статус'] = newStat; if (tsCol) masterRow['Остання зміна'] = ts; if (commCol) masterRow['Коментар'] = newComm; }
 
     refreshGauge(i);
     setSaveMsg(i, true, '✓ Збережено');
