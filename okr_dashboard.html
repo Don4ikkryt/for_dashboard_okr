@@ -246,6 +246,7 @@ main { flex: 1; padding: 28px 32px; }
   align-items: end;
 }
 .kr-field { display: flex; flex-direction: column; gap: 4px; }
+.kr-field-wide { grid-column: span 2; }
 .kr-field label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--c-text-muted); }
 .kr-field-value { font-size: 13px; color: var(--c-text); font-weight: 500; padding: 7px 0; }
 .kr-input {
@@ -263,7 +264,7 @@ main { flex: 1; padding: 28px 32px; }
 .kr-textarea {
   border: 1px solid var(--c-border); border-radius: 5px;
   padding: 7px 10px; font-size: 13px; color: var(--c-text);
-  width: 100%; outline: none; resize: vertical; min-height: 110px;
+  width: 100%; outline: none; resize: vertical; min-height: 85px;
   font-family: inherit; background: var(--c-surface); transition: border-color .15s;
 }
 .kr-textarea:focus { border-color: var(--c-primary-light); }
@@ -894,7 +895,7 @@ function renderTeamQ(fwd) {
           <div class="kr-field"><label>Target</label><div class="kr-field-value">${x(row['Target'])}</div></div>
           <div class="kr-field"><label>Прогрес</label>${progInput}</div>
           <div class="kr-field"><label>Статус</label><select class="kr-select" id="stat_${i}">${statOpts}</select></div>
-          <div class="kr-field"><label>Коментар</label><textarea class="kr-textarea" id="comm_${i}" placeholder="Введіть коментар...">${x(row['Коментар'] || '')}</textarea></div>
+          <div class="kr-field kr-field-wide"><label>Коментар</label><textarea class="kr-textarea" id="comm_${i}" placeholder="Введіть коментар...">${x(row['Коментар'] || '')}</textarea></div>
         </div>
         <div class="kr-card-footer">
           ${row['Чи перенесено'] === 'Так' ? `<button class="transferred-badge" onclick="showTransferDetails(${i})" style="margin-right:auto;">↗ Перенесено · деталі</button>` : ''}
@@ -1078,7 +1079,7 @@ function renderL5(fwd) {
         <div class="kr-field"><label>Target</label><div class="kr-field-value">${x(row['Target'])}</div></div>
         <div class="kr-field"><label>Прогрес</label>${progInput}</div>
         <div class="kr-field"><label>Статус</label><select class="kr-select" id="stat_${i}">${statOpts}</select></div>
-        <div class="kr-field"><label>Коментар</label><textarea class="kr-textarea" id="comm_${i}" placeholder="Введіть коментар...">${x(row['Коментар'] || '')}</textarea></div>
+        <div class="kr-field kr-field-wide"><label>Коментар</label><textarea class="kr-textarea" id="comm_${i}" placeholder="Введіть коментар...">${x(row['Коментар'] || '')}</textarea></div>
       </div>
       <div class="kr-card-footer">
         ${row['Чи перенесено'] === 'Так' ? `<button class="transferred-badge" onclick="showTransferDetails(${i})" style="margin-right:auto;">↗ Перенесено · деталі</button>` : ''}
