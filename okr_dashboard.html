@@ -246,7 +246,7 @@ main { flex: 1; padding: 28px 32px; }
   align-items: end;
 }
 .kr-field { display: flex; flex-direction: column; gap: 4px; }
-.kr-field-wide { grid-column: span 2; }
+.kr-field-wide { grid-column: span 3; }
 .kr-field label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--c-text-muted); }
 .kr-field-value { font-size: 13px; color: var(--c-text); font-weight: 500; padding: 7px 0; }
 .kr-input {
@@ -264,7 +264,7 @@ main { flex: 1; padding: 28px 32px; }
 .kr-textarea {
   border: 1px solid var(--c-border); border-radius: 5px;
   padding: 7px 10px; font-size: 13px; color: var(--c-text);
-  width: 100%; outline: none; resize: vertical; min-height: 85px;
+  width: 100%; outline: none; resize: vertical; min-height: 70px;
   font-family: inherit; background: var(--c-surface); transition: border-color .15s;
 }
 .kr-textarea:focus { border-color: var(--c-primary-light); }
@@ -811,9 +811,12 @@ function renderL1(fwd) {
     teams.forEach(team => {
       const tr = rows.filter(r => r['Команда'] === team);
       const m = teamMetric(tr);
+      const tp = transferPct(team, S.quarter);
+      const tpLabel = tp && tp.count > 0 ? `<div class="team-transfer-stat">↗ ${tp.pct}% перенесено</div>` : '';
       h += `<div class="team-card" onclick="drill1('${esc4js(team)}')">
         ${gauge(m, 96)}
         <div class="card-name">${x(team)}</div>
+        ${tpLabel}
       </div>`;
     });
     h += `</div>`;
