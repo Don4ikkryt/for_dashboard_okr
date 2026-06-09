@@ -883,10 +883,10 @@ function renderTeamQ(fwd) {
           step="any" oninput="onPr1og(${i})" placeholder="${x(row['Baseline'])}">`;
       }
       const statOpts = STATUSES.map(s => `<option value="${x(s)}"${s===stat?' selected':''}>${x(s)}</option>`).join('');
-      h += `<div class="kr-card" id="krc_${i}" data-row="${row._row}">
+      h += `<div class="kr-card" id="krc_${i}" data-row="${row._row}" style="display:flex;gap:20px;align-items:flex-start;">
+        <div style="flex:1;min-width:0;">
         <div class="kr-card-header">
           <div class="kr-card-title">${x(row['Назва квартального KR'])}</div>
-          <div id="gauge_${i}">${gauge(mv, 88)}</div>
         </div>
         <div class="kr-card-body">
           <div class="kr-field"><label>Тип</label><div class="kr-field-value">${x(row['Тип'])}</div></div>
@@ -905,6 +905,8 @@ function renderTeamQ(fwd) {
           <span class="save-status" id="smsg_${i}"></span>
           <button class="btn-save" id="sbtn_${i}" onclick="saveRow(${i})">Зберегти</button>
         </div>
+        </div>
+        <div id="gauge_${i}" style="position:sticky;top:20px;flex-shrink:0;">${gauge(mv, 88)}</div>
       </div>`;
     });
     h += `</div></div>`;
@@ -1058,7 +1060,8 @@ function renderL5(fwd) {
 
     const statOpts = STATUSES.map(s => `<option value="${x(s)}"${s===stat?' selected':''}>${x(s)}</option>`).join('');
 
-    h += `<div class="kr-card" id="krc_${i}" data-row="${row._row}">
+    h += `<div class="kr-card" id="krc_${i}" data-row="${row._row}" style="display:flex;gap:20px;align-items:flex-start;">
+      <div style="flex:1;min-width:0;">
       <div class="kr-card-header">
         <div class="kr-card-header-left">
           <div class="kr-card-title">${x(row['Назва квартального KR'])}</div>
@@ -1068,7 +1071,6 @@ function renderL5(fwd) {
             <span><span class="kr-meta-label">Квартальна ціль:</span> ${x(S.sel.qobj)}</span>
           </div>
         </div>
-        <div id="gauge_${i}">${gauge(m, 88)}</div>
       </div>
       <div class="kr-card-body">
         <div class="kr-field"><label>Тип</label><div class="kr-field-value">${x(row['Тип'])}</div></div>
@@ -1087,6 +1089,8 @@ function renderL5(fwd) {
         <span class="save-status" id="smsg_${i}"></span>
         <button class="btn-save" id="sbtn_${i}" onclick="saveRow(${i})">Зберегти</button>
       </div>
+      </div>
+      <div id="gauge_${i}" style="position:sticky;top:20px;flex-shrink:0;">${gauge(m, 88)}</div>
     </div>`;
   });
   h += `</div>`;
