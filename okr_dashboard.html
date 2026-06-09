@@ -263,7 +263,7 @@ main { flex: 1; padding: 28px 32px; }
 .kr-textarea {
   border: 1px solid var(--c-border); border-radius: 5px;
   padding: 7px 10px; font-size: 13px; color: var(--c-text);
-  width: 100%; outline: none; resize: vertical; min-height: 60px;
+  width: 100%; outline: none; resize: vertical; min-height: 110px;
   font-family: inherit; background: var(--c-surface); transition: border-color .15s;
 }
 .kr-textarea:focus { border-color: var(--c-primary-light); }
@@ -645,6 +645,18 @@ function annualKRMetric(rows) {
 }
 function qObjMetric(rows) { return avg(rows.map(r => calcKR(r))); }
 
+function annKRTransferPct(team, obj, kr) {
+  const rows = S.rows.filter(r =>
+    String(r['Рік']) === String(S.year) &&
+    r['Команда'] === team &&
+    r['Назва річної цілі'] === obj &&
+    r['Назва річного KR'] === kr
+  );
+  const transferred = rows.filter(r => r['Чи перенесено'] === 'Так');
+  if (!rows.length) return null;
+  return { pct: Math.round(transferred.length / rows.length * 100), count: transferred.length, total: rows.length };
+}
+
 function transferPct(team, quarter) {
   if (!quarter) return null;
   const qStr = String(quarter);
@@ -798,12 +810,9 @@ function renderL1(fwd) {
     teams.forEach(team => {
       const tr = rows.filter(r => r['Команда'] === team);
       const m = teamMetric(tr);
-      const tp = transferPct(team, S.quarter);
-      const tpLabel = tp && tp.count > 0 ? `<div class="team-transfer-stat">↗ ${tp.pct}% перенесено</div>` : '';
       h += `<div class="team-card" onclick="drill1('${esc4js(team)}')">
         ${gauge(m, 96)}
         <div class="card-name">${x(team)}</div>
-        ${tpLabel}
       </div>`;
     });
     h += `</div>`;
@@ -940,10 +949,13 @@ function renderL3(fwd) {
   </div><div class="list-items">`;
   krs.forEach(kr => {
     const m = annualKRMetric(rows.filter(r => r['Назва річного KR'] === kr));
+    const tp = annKRTransferPct(S.sel.team, S.sel.obj, kr);
+    const tpBadge = tp && tp.count > 0 ? `<span class="transfer-stat" style="margin-top:4px;">↗ ${tp.pct}% перенесено (${tp.count}/${tp.total})</span>` : '';
     h += `<div class="list-item" onclick="drill3('${esc4js(kr)}')">
       <div class="list-item-info">
         <div class="list-item-name">${x(kr)}</div>
         <div class="list-item-meta">Річна ціль: ${x(S.sel.obj)}</div>
+        ${tpBadge}
       </div>
       <div class="item-actions">
         <button class="btn-icon" onclick="event.stopPropagation();openRenameModal('annKR','${esc4js(kr)}')" title="Редагувати">✏</button>
