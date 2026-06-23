@@ -1150,11 +1150,11 @@ async function saveRow(i) {
     const updates = [
       { range: `${sheetName}!K${rowN}`, values: [[newProg]] },
       { range: `${sheetName}!L${rowN}`, values: [[newStat]] },
+      { range: `${sheetName}!Q${rowN}`, values: [[newComm]] },
     ];
     const tsCol = colOf('Остання зміна');
     if (tsCol) updates.push({ range: `${sheetName}!${tsCol}${rowN}`, values: [[ts]] });
-    const commCol = colOf('Коментар');
-    if (commCol) updates.push({ range: `${sheetName}!${commCol}${rowN}`, values: [[newComm]] });
+    const commCol = 'Q';
     await sheetsBatchUpdate(CFG.MAIN_SHEET, updates);
 
     // Log (best-effort)
